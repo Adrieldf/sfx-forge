@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #101113;
+  --color-panel: #17191c;
+  --color-raise: #1f2226;
+  --color-line: #2a2e34;
+  --color-ink: #ecebe7;
+  --color-mute: #8a8f98;
+  --color-faint: #5d626b;
+  --color-amp: #f2a33a;
+  --color-sig: #5fd4b8;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+/* Slider: --a/--b are the start and end of the filled part, so bipolar
+   parameters can fill outward from their zero point. */
+input[type="range"].sl {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+  --fill: var(--color-amp);
+  --track: var(--color-line);
+}
+input[type="range"].sl.idle {
+  --fill: var(--color-faint);
+}
+input[type="range"].sl:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+input[type="range"].sl::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--track) var(--a),
+    var(--fill) var(--a),
+    var(--fill) var(--b),
+    var(--track) var(--b)
+  );
+}
+input[type="range"].sl::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--track) var(--a),
+    var(--fill) var(--a),
+    var(--fill) var(--b),
+    var(--track) var(--b)
+  );
+}
+input[type="range"].sl::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--fill);
+}
+input[type="range"].sl::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--fill);
+}
+input[type="range"].sl:focus-visible {
+  outline: none;
+}
+input[type="range"].sl:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--color-sig);
+}
+input[type="range"].sl:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px var(--color-sig);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}

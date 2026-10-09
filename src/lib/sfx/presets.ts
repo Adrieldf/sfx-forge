@@ -1,0 +1,266 @@
+import { FIST, HARD_STEP, RUSTLE, SOFT_STEP, TAP, type P } from "./exciters";
+import { DEFAULTS, type SoundParams } from "./params";
+import { CLASSIC_MORE, FOLEY_MORE, MODERN_MORE } from "./presets-more";
+
+export type PresetStyle = "classic" | "modern" | "foley";
+
+export interface Preset {
+  name: string;
+  category: string;
+  style: PresetStyle;
+  params: SoundParams;
+}
+
+// Chip-tune flavoured: raw waveforms, hard edges, instant attacks.
+const CLASSIC: Record<string, Record<string, P>> = {
+  Pickups: {
+    Coin: { wave: "square", frequency: 988, jump1: 5, jump1Time: 0.07, sustain: 0.08, punch: 0.4, decay: 0.35 },
+    Gem: { wave: "triangle", frequency: 1320, jump1: 7, jump1Time: 0.06, jump2: 12, jump2Time: 0.12, osc2Mix: 0.3, osc2Detune: 12, sustain: 0.1, decay: 0.4, reverbMix: 0.2 },
+    Key: { wave: "square", duty: 0.25, frequency: 660, jump1: 4, jump1Time: 0.06, jump2: 7, jump2Time: 0.12, sustain: 0.12, decay: 0.2 },
+    Heart: { wave: "sine", frequency: 520, slide: 1.5, osc2Mix: 0.4, osc2Detune: 12, sustain: 0.15, decay: 0.25 },
+    Ring: { wave: "sine", frequency: 1760, fmDepth: 0.8, fmRatio: 3.5, sustain: 0.02, decay: 0.8, reverbMix: 0.25 },
+    "Extra life": { wave: "square", duty: 0.4, frequency: 523, jump1: 7, jump1Time: 0.1, jump2: 12, jump2Time: 0.2, vibDepth: 0.3, vibRate: 12, sustain: 0.3, decay: 0.3, echoMix: 0.25, echoTime: 0.1 },
+    Ammo: { wave: "square", duty: 0.2, frequency: 300, jump1: 12, jump1Time: 0.05, noiseMix: 0.25, sustain: 0.06, decay: 0.08, lpCutoff: 5000 },
+    Star: { wave: "triangle", frequency: 880, slide: 2, repeatRate: 14, osc2Mix: 0.4, osc2Detune: 7, sustain: 0.3, decay: 0.35, reverbMix: 0.25 },
+  },
+  Weapons: {
+    Laser: { wave: "square", duty: 0.3, dutySweep: 0.5, frequency: 1200, slide: -6, sustain: 0.08, decay: 0.15, hpCutoff: 200 },
+    Blaster: { wave: "saw", frequency: 900, slide: -8, sustain: 0.05, punch: 0.5, decay: 0.12, lpCutoff: 6000 },
+    "Heavy laser": { wave: "saw", frequency: 500, slide: -3, osc2Mix: 0.6, osc2Detune: -12, sustain: 0.15, decay: 0.35, drive: 0.4, flangerOffset: 3, flangerSweep: -8 },
+    Plasma: { wave: "sine", frequency: 300, fmDepth: 3, fmRatio: 1.5, slide: -2, vibDepth: 2, vibRate: 30, sustain: 0.12, decay: 0.3 },
+    Gunshot: { wave: "noise", frequency: 1500, slide: -4, sustain: 0.01, punch: 0.8, decay: 0.18, lpCutoff: 5000, drive: 0.3 },
+    "Machine gun": { wave: "noise", frequency: 1100, sustain: 0.42, decay: 0.06, tremDepth: 1, tremRate: 14, lpCutoff: 4500, drive: 0.4 },
+    Shotgun: { wave: "noise", frequency: 600, slide: -2, sustain: 0.03, punch: 1, decay: 0.4, lpCutoff: 3500, lpSweep: -3, drive: 0.5, reverbMix: 0.2 },
+    "Sword swing": { wave: "noise", frequency: 3000, attack: 0.06, sustain: 0.02, decay: 0.14, lpCutoff: 1500, lpSweep: 6, lpResonance: 0.5, hpCutoff: 500 },
+    Arrow: { wave: "noise", frequency: 5000, attack: 0.01, sustain: 0.03, decay: 0.12, lpCutoff: 6000, lpSweep: -5, lpResonance: 0.3, hpCutoff: 1500 },
+    "Charge up": { wave: "saw", frequency: 110, slide: 2.2, attack: 0.3, sustain: 0.9, decay: 0.1, vibDepth: 1, vibRate: 20, tremDepth: 0.4, tremRate: 25, lpCutoff: 800, lpSweep: 3 },
+    Missile: { wave: "noise", frequency: 400, slide: 1, attack: 0.1, sustain: 0.5, decay: 0.3, lpCutoff: 2500, hpCutoff: 300, flangerOffset: 4, flangerSweep: 8 },
+    Railgun: { wave: "saw", frequency: 2400, slide: -5, slideAccel: 4, fmDepth: 2, fmRatio: 0.5, sustain: 0.05, punch: 0.7, decay: 0.5, drive: 0.5, echoMix: 0.3, echoTime: 0.08, reverbMix: 0.2 },
+  },
+  Explosions: {
+    Explosion: { wave: "noise", frequency: 120, slide: -1, sustain: 0.1, punch: 0.6, decay: 0.7, lpCutoff: 2500, lpSweep: -2.5, drive: 0.5 },
+    "Big explosion": { wave: "noise", frequency: 60, slide: -0.5, sustain: 0.25, punch: 0.8, decay: 1.4, lpCutoff: 1500, lpSweep: -1.5, drive: 0.7, reverbMix: 0.35, reverbSize: 0.8 },
+    "8-bit boom": { wave: "noise", frequency: 200, slide: -2, sustain: 0.05, decay: 0.5, bits: 4, crushRate: 8000 },
+    "Distant rumble": { wave: "noise", frequency: 40, attack: 0.1, sustain: 0.4, decay: 1.5, lpCutoff: 400, reverbMix: 0.5, reverbSize: 0.9 },
+    Fireball: { wave: "noise", frequency: 300, slide: -1.5, attack: 0.03, sustain: 0.15, decay: 0.4, lpCutoff: 1800, lpResonance: 0.3, flangerOffset: 5, flangerSweep: 10 },
+    "Glass break": { wave: "square", frequency: 2500, fmDepth: 4, fmRatio: 3.7, noiseMix: 0.7, sustain: 0.02, decay: 0.35, tremDepth: 0.6, tremRate: 40, hpCutoff: 2500, reverbMix: 0.15 },
+    Thunder: { wave: "noise", frequency: 80, attack: 0.02, sustain: 0.3, decay: 2, tremDepth: 0.5, tremRate: 9, lpCutoff: 900, lpSweep: -1, drive: 0.5, reverbMix: 0.6, reverbSize: 1 },
+  },
+  Movement: {
+    Jump: { wave: "square", frequency: 300, slide: 3.5, sustain: 0.1, decay: 0.15 },
+    "Double jump": { wave: "square", duty: 0.25, frequency: 450, slide: 4.5, sustain: 0.06, decay: 0.12 },
+    Land: { wave: "sine", frequency: 140, slide: -5, noiseMix: 0.3, sustain: 0.02, decay: 0.12, lpCutoff: 900 },
+    Dash: { wave: "noise", frequency: 2000, attack: 0.02, sustain: 0.04, decay: 0.15, lpCutoff: 3000, lpSweep: -6, lpResonance: 0.3, hpCutoff: 400 },
+    Footstep: { wave: "noise", frequency: 500, sustain: 0.005, decay: 0.06, lpCutoff: 1200, hpCutoff: 150 },
+    Skid: { wave: "noise", frequency: 1500, attack: 0.03, sustain: 0.25, decay: 0.15, tremDepth: 0.3, tremRate: 35, lpCutoff: 2500, hpCutoff: 800 },
+    Splash: { wave: "noise", frequency: 1000, attack: 0.01, sustain: 0.08, decay: 0.3, lpCutoff: 1800, lpSweep: -3, lpResonance: 0.4 },
+    Boing: { wave: "sine", frequency: 220, slide: 2, vibDepth: 3, vibRate: 18, sustain: 0.15, decay: 0.3 },
+    Climb: { wave: "triangle", frequency: 260, jump1: 3, jump1Time: 0.04, sustain: 0.05, decay: 0.05, lpCutoff: 2500 },
+  },
+  Combat: {
+    Hurt: { wave: "saw", frequency: 420, slide: -4, noiseMix: 0.25, sustain: 0.04, decay: 0.18, lpCutoff: 4000 },
+    Punch: { wave: "sine", frequency: 180, slide: -6, noiseMix: 0.5, sustain: 0.01, punch: 0.8, decay: 0.1, lpCutoff: 2000, drive: 0.4 },
+    "Enemy hit": { wave: "square", duty: 0.3, frequency: 520, slide: -5, noiseMix: 0.4, sustain: 0.02, decay: 0.1 },
+    "Critical hit": { wave: "square", frequency: 900, slide: -3, jump1: 12, jump1Time: 0.03, noiseMix: 0.3, sustain: 0.05, decay: 0.25, drive: 0.5, echoMix: 0.2 },
+    "Shield block": { wave: "square", frequency: 1400, fmDepth: 2.5, fmRatio: 2.76, sustain: 0.01, decay: 0.25, hpCutoff: 600, reverbMix: 0.15 },
+    "Sword clash": { wave: "sine", frequency: 1800, fmDepth: 4, fmRatio: 3.14, noiseMix: 0.2, sustain: 0.01, decay: 0.4, hpCutoff: 1000, reverbMix: 0.2 },
+    Death: { wave: "square", duty: 0.4, dutySweep: -0.3, frequency: 440, slide: -1.2, vibDepth: 1, vibRate: 9, sustain: 0.4, decay: 0.5 },
+    Squish: { wave: "sine", frequency: 500, slide: -7, noiseMix: 0.2, sustain: 0.03, decay: 0.15, lpCutoff: 2500, lpResonance: 0.5 },
+    Miss: { wave: "noise", frequency: 2500, attack: 0.04, sustain: 0.01, decay: 0.1, lpCutoff: 4000, lpSweep: -8, hpCutoff: 900 },
+  },
+  "Power & magic": {
+    "Power up": { wave: "saw", frequency: 440, slide: 1.2, vibDepth: 0.5, vibRate: 14, sustain: 0.35, decay: 0.3 },
+    "Level up": { wave: "triangle", frequency: 523, jump1: 4, jump1Time: 0.1, jump2: 7, jump2Time: 0.2, osc2Mix: 0.5, osc2Detune: 12, sustain: 0.4, decay: 0.5, echoMix: 0.3, echoTime: 0.12, reverbMix: 0.2 },
+    Heal: { wave: "sine", frequency: 440, slide: 0.8, vibDepth: 0.4, vibRate: 6, osc2Mix: 0.5, osc2Detune: 7, attack: 0.1, sustain: 0.4, decay: 0.5, tremDepth: 0.3, tremRate: 9, reverbMix: 0.4 },
+    "Power down": { wave: "saw", frequency: 500, slide: -1.5, vibDepth: 0.5, vibRate: 10, sustain: 0.3, decay: 0.3, lpCutoff: 3000, lpSweep: -2 },
+    Teleport: { wave: "sine", frequency: 300, slide: 3, repeatRate: 18, fmDepth: 1, fmRatio: 2, sustain: 0.4, decay: 0.3, flangerOffset: 4, flangerSweep: 10, echoMix: 0.3 },
+    "Magic spell": { wave: "sine", frequency: 880, slide: 1, fmDepth: 1.5, fmRatio: 2.5, vibDepth: 2, vibRate: 25, attack: 0.05, sustain: 0.25, decay: 0.5, echoMix: 0.25, reverbMix: 0.4 },
+    "Shield up": { wave: "sine", frequency: 200, slide: 2, osc2Mix: 0.5, osc2Detune: 7, attack: 0.15, sustain: 0.2, decay: 0.4, flangerOffset: 6, flangerSweep: -10, reverbMix: 0.3 },
+    Freeze: { wave: "square", frequency: 2400, slide: -0.5, fmDepth: 3, fmRatio: 4.1, sustain: 0.1, decay: 0.6, tremDepth: 0.7, tremRate: 45, hpCutoff: 1500, reverbMix: 0.35 },
+    Zap: { wave: "saw", frequency: 180, fmDepth: 6, fmRatio: 7.3, noiseMix: 0.3, sustain: 0.2, decay: 0.15, tremDepth: 0.8, tremRate: 55, hpCutoff: 300, bits: 8 },
+    Bubble: { wave: "sine", frequency: 300, slide: 6, sustain: 0.02, decay: 0.08 },
+    Curse: { wave: "saw", frequency: 160, slide: -0.6, osc2Mix: 0.8, osc2Detune: 0.4, vibDepth: 0.6, vibRate: 5, attack: 0.1, sustain: 0.5, decay: 0.6, lpCutoff: 1400, lpResonance: 0.4, reverbMix: 0.45, reverbSize: 0.8 },
+  },
+  UI: {
+    Click: { wave: "triangle", frequency: 1800, slide: -8, sustain: 0.002, decay: 0.03 },
+    Hover: { wave: "sine", frequency: 900, sustain: 0.005, decay: 0.04 },
+    Confirm: { wave: "sine", frequency: 660, jump1: 7, jump1Time: 0.07, osc2Mix: 0.3, osc2Detune: 12, sustain: 0.08, decay: 0.2 },
+    Cancel: { wave: "sine", frequency: 520, jump1: -7, jump1Time: 0.07, sustain: 0.08, decay: 0.18 },
+    Error: { wave: "saw", frequency: 140, sustain: 0.26, decay: 0.05, tremDepth: 1, tremRate: 7, lpCutoff: 1800 },
+    Denied: { wave: "square", duty: 0.3, frequency: 220, jump1: -1, jump1Time: 0.1, sustain: 0.2, decay: 0.05, lpCutoff: 2500 },
+    "Toggle on": { wave: "triangle", frequency: 700, jump1: 5, jump1Time: 0.04, sustain: 0.03, decay: 0.06 },
+    "Toggle off": { wave: "triangle", frequency: 930, jump1: -5, jump1Time: 0.04, sustain: 0.03, decay: 0.06 },
+    Notification: { wave: "sine", frequency: 880, fmDepth: 0.5, fmRatio: 3, jump1: 4, jump1Time: 0.12, sustain: 0.15, decay: 0.6, reverbMix: 0.25 },
+    "Menu open": { wave: "sine", frequency: 300, slide: 5, sustain: 0.06, decay: 0.1, lpCutoff: 4000 },
+    "Menu close": { wave: "sine", frequency: 800, slide: -5, sustain: 0.06, decay: 0.1, lpCutoff: 4000 },
+    "Key tick": { wave: "noise", frequency: 4000, sustain: 0.001, decay: 0.015, hpCutoff: 2000 },
+    "Tab switch": { wave: "triangle", frequency: 500, sustain: 0.01, decay: 0.05, hpCutoff: 300 },
+    "Cursor move": { wave: "square", duty: 0.25, frequency: 440, sustain: 0.02, decay: 0.04, lpCutoff: 3000 },
+    "Text blip": { wave: "square", duty: 0.3, frequency: 520, sustain: 0.01, decay: 0.03 },
+    Success: { wave: "square", duty: 0.25, frequency: 523, jump1: 4, jump1Time: 0.09, jump2: 12, jump2Time: 0.18, sustain: 0.3, decay: 0.4, echoMix: 0.25, echoTime: 0.09 },
+    Purchase: { wave: "sine", frequency: 1318, fmDepth: 0.6, fmRatio: 4, jump1: 5, jump1Time: 0.05, jump2: 9, jump2Time: 0.1, sustain: 0.1, decay: 0.5, reverbMix: 0.2 },
+    Pause: { wave: "triangle", frequency: 660, jump1: -5, jump1Time: 0.07, jump2: -12, jump2Time: 0.14, sustain: 0.18, decay: 0.1 },
+    "Countdown beep": { wave: "sine", frequency: 880, sustain: 0.08, decay: 0.04 },
+    "Countdown go": { wave: "sine", frequency: 1760, osc2Mix: 0.3, osc2Detune: -12, sustain: 0.3, decay: 0.2 },
+    "Slider tick": { wave: "sine", frequency: 2200, sustain: 0.001, decay: 0.02, hpCutoff: 800 },
+    Achievement: { wave: "triangle", frequency: 784, jump1: 5, jump1Time: 0.08, jump2: 12, jump2Time: 0.16, fmDepth: 0.4, fmRatio: 2, osc2Mix: 0.4, osc2Detune: 12.1, sustain: 0.35, decay: 0.7, echoMix: 0.2, echoTime: 0.16, reverbMix: 0.3 },
+  },
+  "World & ambient": {
+    Alarm: { wave: "square", frequency: 700, vibDepth: 4, vibRate: 3, sustain: 1, decay: 0.1, lpCutoff: 4000 },
+    Siren: { wave: "saw", frequency: 600, vibDepth: 5, vibRate: 1.5, sustain: 1.5, decay: 0.2, lpCutoff: 3000 },
+    Engine: { wave: "saw", frequency: 55, fmDepth: 1, fmRatio: 0.5, noiseMix: 0.15, sustain: 1, decay: 0.2, tremDepth: 0.5, tremRate: 28, lpCutoff: 700, drive: 0.5 },
+    Wind: { wave: "noise", frequency: 800, attack: 0.5, sustain: 0.8, decay: 1, lpCutoff: 700, lpSweep: 0.8, lpResonance: 0.6 },
+    "Water drop": { wave: "sine", frequency: 600, slide: 7, sustain: 0.01, decay: 0.07, echoMix: 0.3, echoTime: 0.12, reverbMix: 0.3 },
+    "Robot talk": { wave: "square", frequency: 200, slide: 4, repeatRate: 14, fmDepth: 2, fmRatio: 3, sustain: 0.5, decay: 0.1, bits: 6, crushRate: 9000 },
+    Bell: { wave: "sine", frequency: 880, fmDepth: 2, fmRatio: 3.5, sustain: 0.01, decay: 1.5, reverbMix: 0.35 },
+    Door: { wave: "noise", frequency: 200, slide: -1, sustain: 0.05, decay: 0.25, lpCutoff: 600, reverbMix: 0.3 },
+    Computer: { wave: "square", frequency: 800, vibDepth: 12, vibRate: 11, sustain: 0.5, decay: 0.05, bits: 5 },
+    UFO: { wave: "sine", frequency: 500, vibDepth: 6, vibRate: 7, fmDepth: 0.5, fmRatio: 2, sustain: 1, decay: 0.3, flangerOffset: 3, flangerSweep: 4 },
+    Heartbeat: { wave: "sine", frequency: 55, slide: -2, sustain: 0.03, decay: 0.12, lpCutoff: 300, echoMix: 0.7, echoTime: 0.22, echoFeedback: 0 },
+    Static: { wave: "noise", frequency: 6000, sustain: 0.5, decay: 0.05, tremDepth: 0.7, tremRate: 60, hpCutoff: 1200, bits: 3, crushRate: 6000 },
+    "Steam vent": { wave: "noise", frequency: 7000, attack: 0.02, sustain: 0.35, decay: 0.5, lpCutoff: 9000, lpSweep: -1.5, hpCutoff: 2500 },
+  },
+};
+
+// Contemporary flavoured: sine and FM tones, soft attacks, filtered noise, room reverb.
+const MODERN: Record<string, Record<string, P>> = {
+  "Modern UI": {
+    "Soft tap": { wave: "sine", frequency: 620, slide: -3, attack: 0.002, sustain: 0.004, decay: 0.06, lpCutoff: 3000 },
+    Pop: { wave: "sine", frequency: 420, slide: 5, attack: 0.001, sustain: 0.01, decay: 0.07, lpCutoff: 2500 },
+    "Glass tap": { wave: "sine", frequency: 2100, fmDepth: 0.6, fmRatio: 2.4, sustain: 0.002, decay: 0.18, hpCutoff: 600, reverbMix: 0.15, reverbSize: 0.3 },
+    "Soft confirm": { wave: "sine", frequency: 587, jump1: 7, jump1Time: 0.09, osc2Mix: 0.25, osc2Detune: 12, attack: 0.005, sustain: 0.09, decay: 0.35, lpCutoff: 5000, reverbMix: 0.2 },
+    "Soft cancel": { wave: "sine", frequency: 494, jump1: -5, jump1Time: 0.09, attack: 0.005, sustain: 0.08, decay: 0.25, lpCutoff: 3500, reverbMix: 0.15 },
+    Chime: { wave: "sine", frequency: 1046, fmDepth: 0.4, fmRatio: 3, jump1: 4, jump1Time: 0.11, jump2: 7, jump2Time: 0.22, osc2Mix: 0.2, osc2Detune: 12, attack: 0.003, sustain: 0.2, decay: 0.9, reverbMix: 0.35, reverbSize: 0.6 },
+    "Message in": { wave: "sine", frequency: 740, jump1: 5, jump1Time: 0.08, attack: 0.004, sustain: 0.1, decay: 0.3, lpCutoff: 4000, reverbMix: 0.2 },
+    "Message sent": { wave: "sine", frequency: 380, slide: 3.5, noiseMix: 0.15, attack: 0.01, sustain: 0.05, decay: 0.12, lpCutoff: 2500 },
+    Swipe: { wave: "noise", frequency: 4000, attack: 0.05, sustain: 0.02, decay: 0.12, lpCutoff: 1200, lpSweep: 7, lpResonance: 0.2, hpCutoff: 400 },
+    "Switch on": { wave: "sine", frequency: 520, jump1: 7, jump1Time: 0.035, attack: 0.002, sustain: 0.03, decay: 0.08, lpCutoff: 4000 },
+    "Switch off": { wave: "sine", frequency: 780, jump1: -7, jump1Time: 0.035, attack: 0.002, sustain: 0.03, decay: 0.08, lpCutoff: 4000 },
+    "Modal open": { wave: "sine", frequency: 220, slide: 2.5, osc2Mix: 0.4, osc2Detune: 7, attack: 0.03, sustain: 0.06, decay: 0.2, lpCutoff: 1800, reverbMix: 0.2 },
+    "Modal close": { wave: "sine", frequency: 440, slide: -2.5, osc2Mix: 0.4, osc2Detune: 7, attack: 0.02, sustain: 0.05, decay: 0.18, lpCutoff: 1800, reverbMix: 0.2 },
+    "Soft warning": { wave: "sine", frequency: 440, fmDepth: 0.3, fmRatio: 2, jump1: -4, jump1Time: 0.14, attack: 0.005, sustain: 0.26, decay: 0.25, reverbMix: 0.2 },
+    "Soft error": { wave: "sine", frequency: 150, slide: -2, fmDepth: 1, fmRatio: 1, osc2Mix: 0.5, osc2Detune: 0.3, attack: 0.003, sustain: 0.05, decay: 0.18, lpCutoff: 900 },
+    Sparkle: { wave: "sine", frequency: 880, fmDepth: 0.5, fmRatio: 4, jump1: 7, jump1Time: 0.07, jump2: 12, jump2Time: 0.14, osc2Mix: 0.3, osc2Detune: 12.1, attack: 0.003, sustain: 0.2, decay: 0.8, echoMix: 0.2, echoTime: 0.14, reverbMix: 0.35 },
+    "Key thock": { wave: "sine", frequency: 190, slide: -6, noiseMix: 0.35, sustain: 0.002, decay: 0.045, lpCutoff: 1800 },
+    "Haptic tick": { wave: "sine", frequency: 90, slide: -4, sustain: 0.004, decay: 0.03, lpCutoff: 600 },
+    "Loading pulse": { wave: "sine", frequency: 330, osc2Mix: 0.4, osc2Detune: 12, attack: 0.08, sustain: 0.05, decay: 0.35, lpCutoff: 2000, reverbMix: 0.3 },
+    Unlock: { wave: "sine", frequency: 660, fmDepth: 0.8, fmRatio: 2.5, jump1: 12, jump1Time: 0.06, sustain: 0.05, decay: 0.5, reverbMix: 0.3 },
+    Reward: { wave: "sine", frequency: 1318, fmDepth: 0.5, fmRatio: 2, jump1: 7, jump1Time: 0.06, osc2Mix: 0.3, osc2Detune: 12, sustain: 0.05, decay: 0.6, reverbMix: 0.3 },
+    "Dialogue blip": { wave: "sine", frequency: 480, sustain: 0.008, decay: 0.035, lpCutoff: 2500 },
+  },
+  "Modern actions": {
+    Whoosh: { wave: "noise", frequency: 2500, attack: 0.12, sustain: 0.03, decay: 0.22, lpCutoff: 800, lpSweep: 5, lpResonance: 0.35, hpCutoff: 250, reverbMix: 0.15 },
+    "Heavy whoosh": { wave: "noise", frequency: 900, attack: 0.18, sustain: 0.05, decay: 0.3, lpCutoff: 400, lpSweep: 4, lpResonance: 0.4, flangerOffset: 3, flangerSweep: 8, reverbMix: 0.2 },
+    "Soft jump": { wave: "sine", frequency: 260, slide: 3, noiseMix: 0.1, attack: 0.005, sustain: 0.06, decay: 0.14, lpCutoff: 2200 },
+    "Soft land": { wave: "sine", frequency: 95, slide: -4, noiseMix: 0.4, sustain: 0.01, decay: 0.14, lpCutoff: 700 },
+    "Soft footstep": { wave: "noise", frequency: 300, sustain: 0.004, decay: 0.07, lpCutoff: 650, hpCutoff: 80 },
+    "Item pickup": { wave: "sine", frequency: 700, slide: 2.2, osc2Mix: 0.3, osc2Detune: 12, attack: 0.003, sustain: 0.04, decay: 0.2, lpCutoff: 5000, reverbMix: 0.2 },
+    "Ability ready": { wave: "sine", frequency: 523, fmDepth: 0.6, fmRatio: 3, jump1: 7, jump1Time: 0.1, osc2Mix: 0.3, osc2Detune: 12, attack: 0.01, sustain: 0.22, decay: 0.7, reverbMix: 0.4 },
+    Restore: { wave: "sine", frequency: 392, jump1: 7, jump1Time: 0.18, jump2: 12, jump2Time: 0.36, osc2Mix: 0.5, osc2Detune: 12.1, attack: 0.08, sustain: 0.5, decay: 0.9, lpCutoff: 3500, reverbMix: 0.5, reverbSize: 0.8 },
+    "Level complete": { wave: "triangle", frequency: 523, fmDepth: 0.3, fmRatio: 2, jump1: 4, jump1Time: 0.12, jump2: 7, jump2Time: 0.24, osc2Mix: 0.5, osc2Detune: 12.1, attack: 0.01, sustain: 0.5, decay: 1, lpCutoff: 6000, echoMix: 0.2, echoTime: 0.18, reverbMix: 0.45 },
+    Cloak: { wave: "noise", frequency: 3000, attack: 0.2, sustain: 0.1, decay: 0.5, lpCutoff: 5000, lpSweep: -3, lpResonance: 0.5, hpCutoff: 600, flangerOffset: 2, flangerSweep: 10, reverbMix: 0.3 },
+  },
+  "Modern impacts": {
+    "Deep impact": { wave: "sine", frequency: 70, slide: -3, noiseMix: 0.35, sustain: 0.03, punch: 0.8, decay: 0.5, lpCutoff: 1200, lpSweep: -3, drive: 0.35, reverbMix: 0.3, reverbSize: 0.7 },
+    "Sub drop": { wave: "sine", frequency: 110, slide: -1.6, attack: 0.01, sustain: 0.2, decay: 0.9, lpCutoff: 500, drive: 0.2, reverbMix: 0.2 },
+    "Cinematic boom": { wave: "noise", frequency: 50, slide: -0.4, sustain: 0.12, punch: 0.9, decay: 1.8, lpCutoff: 700, lpSweep: -1.2, drive: 0.6, reverbMix: 0.55, reverbSize: 1 },
+    "Metal hit": { wave: "sine", frequency: 520, fmDepth: 3.5, fmRatio: 1.41, noiseMix: 0.15, sustain: 0.005, decay: 0.45, hpCutoff: 250, reverbMix: 0.3 },
+    "Energy shot": { wave: "sine", frequency: 900, slide: -5, fmDepth: 2, fmRatio: 0.5, noiseMix: 0.15, attack: 0.002, sustain: 0.04, decay: 0.22, lpCutoff: 6000, lpSweep: -4, reverbMix: 0.2 },
+    "Pulse rifle": { wave: "saw", frequency: 1400, slide: -6, osc2Mix: 0.5, osc2Detune: -12, fmDepth: 1, fmRatio: 0.5, sustain: 0.03, punch: 0.5, decay: 0.16, lpCutoff: 7000, lpSweep: -6, hpCutoff: 150, drive: 0.25, reverbMix: 0.15 },
+    "Silenced shot": { wave: "noise", frequency: 1800, slide: -3, sustain: 0.004, decay: 0.09, lpCutoff: 2200, lpSweep: -6, hpCutoff: 200 },
+    "Body hit": { wave: "sine", frequency: 120, slide: -5, noiseMix: 0.45, sustain: 0.008, punch: 0.6, decay: 0.12, lpCutoff: 1100, drive: 0.25 },
+  },
+  "Sci-fi & cinematic": {
+    Riser: { wave: "saw", frequency: 110, slide: 1.6, osc2Mix: 0.7, osc2Detune: 0.2, noiseMix: 0.2, attack: 0.9, sustain: 0.3, decay: 0.08, lpCutoff: 500, lpSweep: 3, lpResonance: 0.3, reverbMix: 0.3 },
+    "Energy shield": { wave: "saw", frequency: 110, osc2Mix: 0.9, osc2Detune: 0.2, fmDepth: 0.4, fmRatio: 2, attack: 0.12, sustain: 0.3, decay: 0.5, lpCutoff: 900, lpSweep: 1.5, lpResonance: 0.5, flangerOffset: 4, flangerSweep: -6, reverbMix: 0.35 },
+    Scan: { wave: "sine", frequency: 1400, slide: -1.5, fmDepth: 1.2, fmRatio: 0.25, attack: 0.02, sustain: 0.25, decay: 0.25, tremDepth: 0.5, tremRate: 30, hpCutoff: 500, echoMix: 0.25, echoTime: 0.07, reverbMix: 0.3 },
+    Glitch: { wave: "square", frequency: 320, slide: 5, repeatRate: 22, fmDepth: 5, fmRatio: 6.3, sustain: 0.16, decay: 0.04, tremDepth: 0.9, tremRate: 38, hpCutoff: 300, bits: 5, crushRate: 5000 },
+    Portal: { wave: "sine", frequency: 140, slide: 1.4, vibDepth: 1.5, vibRate: 6, osc2Mix: 0.6, osc2Detune: 7, fmDepth: 0.8, fmRatio: 1.5, attack: 0.25, sustain: 0.4, decay: 0.7, flangerOffset: 5, flangerSweep: 8, reverbMix: 0.5, reverbSize: 0.9 },
+    "Radar ping": { wave: "sine", frequency: 1200, sustain: 0.01, decay: 0.5, hpCutoff: 400, echoMix: 0.35, echoTime: 0.2, echoFeedback: 0.4, reverbMix: 0.35 },
+    Drone: { wave: "saw", frequency: 82, osc2Mix: 1, osc2Detune: 0.1, vibDepth: 0.15, vibRate: 4, attack: 0.6, sustain: 0.8, decay: 1.2, lpCutoff: 500, lpResonance: 0.3, reverbMix: 0.5, reverbSize: 0.9 },
+    "Warp jump": { wave: "sine", frequency: 90, slide: 2.5, slideAccel: 3, osc2Mix: 0.6, osc2Detune: 0.3, noiseMix: 0.2, attack: 0.3, sustain: 0.35, decay: 0.15, lpCutoff: 1500, lpSweep: 2, flangerOffset: 3, flangerSweep: 12, reverbMix: 0.4, reverbSize: 0.8 },
+    "Power core": { wave: "triangle", frequency: 65, fmDepth: 1.5, fmRatio: 2, osc2Mix: 0.7, osc2Detune: 12, attack: 0.2, sustain: 0.6, decay: 0.6, tremDepth: 0.35, tremRate: 12, lpCutoff: 1200, reverbMix: 0.3 },
+  },
+};
+
+// Physical flavoured: a short hit or a stretch of noise, run through a material.
+const FOLEY: Record<string, Record<string, P>> = {
+  "Material hits": {
+    "Punch wood": { ...FIST, material: "wood" },
+    "Knock on door": { ...TAP, material: "hollow", matSize: 0.8, echoMix: 0.9, echoTime: 0.16, echoFeedback: 0 },
+    "Wood plank": { ...TAP, material: "wood", matSize: 1.6, matRing: 0.65 },
+    "Twig snap": { ...TAP, material: "wood", matSize: 0.35, matRing: 0.3, drive: 0.3 },
+    "Crate smash": { wave: "noise", frequency: 3000, sustain: 0.02, punch: 0.8, decay: 0.18, material: "hollow", matAmount: 0.7, matRing: 0.4, drive: 0.4 },
+    "Punch rock": { ...FIST, material: "stone" },
+    "Rock crack": { wave: "noise", frequency: 4000, sustain: 0.01, punch: 1, decay: 0.12, material: "stone", matSize: 1.5, drive: 0.5, reverbMix: 0.15 },
+    Pebble: { ...TAP, material: "stone", matSize: 0.4 },
+    Boulder: { ...FIST, frequency: 70, decay: 0.12, material: "stone", matSize: 3, matRing: 0.7, reverbMix: 0.25, reverbSize: 0.7 },
+    "Metal clang": { ...TAP, material: "metal" },
+    "Metal pipe": { ...TAP, material: "metal", matSize: 1.8, matRing: 0.7 },
+    "Metal tink": { ...TAP, material: "metal", matSize: 0.35, matRing: 0.35 },
+    Anvil: { ...FIST, material: "metal", matSize: 0.7, matRing: 0.6, drive: 0.2 },
+    "Glass clink": { ...TAP, material: "glass", matRing: 0.6 },
+    Bottle: { ...TAP, material: "glass", matSize: 1.8 },
+    "Plastic tap": { ...TAP, material: "plastic" },
+    "Body punch": { ...FIST, material: "flesh", matAmount: 0.9 },
+    Slap: { wave: "noise", frequency: 6000, sustain: 0.002, decay: 0.04, material: "flesh", matAmount: 0.6, matSize: 0.5 },
+    "Dirt thud": { ...FIST, material: "dirt" },
+    "Punch grass": { ...FIST, decay: 0.09, material: "grass", matAmount: 0.6, lpCutoff: 7000 },
+    "Gravel hit": { ...SOFT_STEP, punch: 0.6, material: "gravel" },
+    "Sand hit": { ...SOFT_STEP, material: "sand", matAmount: 0.9 },
+    Snowball: { ...FIST, decay: 0.1, material: "snow" },
+    "Water plop": { ...SOFT_STEP, sustain: 0.06, decay: 0.2, material: "water", matDensity: 0.6, reverbMix: 0.15 },
+    Pillow: { ...FIST, material: "cloth", lpCutoff: 3000 },
+  },
+  Footsteps: {
+    "Step wood": { ...HARD_STEP, material: "wood", matSize: 1.3 },
+    "Step stone": { ...HARD_STEP, material: "stone", matAmount: 0.7 },
+    "Step metal": { ...HARD_STEP, material: "metal", matSize: 1.4, matRing: 0.25 },
+    "Step grass": { ...SOFT_STEP, material: "grass" },
+    "Step leaves": { ...SOFT_STEP, decay: 0.12, material: "leaves" },
+    "Step gravel": { ...SOFT_STEP, sustain: 0.05, decay: 0.12, material: "gravel" },
+    "Step dirt": { ...SOFT_STEP, material: "dirt" },
+    "Step sand": { ...SOFT_STEP, material: "sand", lpCutoff: 6000 },
+    "Step snow": { ...SOFT_STEP, sustain: 0.06, decay: 0.14, material: "snow" },
+    "Step puddle": { ...SOFT_STEP, decay: 0.18, material: "water", matDensity: 0.7 },
+    "Step carpet": { ...SOFT_STEP, material: "cloth", lpCutoff: 2500 },
+  },
+  "Surfaces & textures": {
+    "Grass rustle": { ...RUSTLE, material: "grass" },
+    "Leaves rustle": { ...RUSTLE, material: "leaves" },
+    "Gravel slide": { wave: "noise", frequency: 5000, attack: 0.05, sustain: 0.5, decay: 0.3, material: "gravel", matDensity: 0.65 },
+    Rockslide: { wave: "noise", frequency: 2000, attack: 0.1, sustain: 0.8, decay: 0.8, material: "gravel", matSize: 2.5, matDensity: 0.6, lpCutoff: 3000, drive: 0.3, reverbMix: 0.2 },
+    "Sand pour": { wave: "noise", frequency: 6000, attack: 0.2, sustain: 0.8, decay: 0.5, material: "sand" },
+    "Cloth swish": { wave: "noise", frequency: 4000, attack: 0.08, sustain: 0.05, decay: 0.2, material: "cloth" },
+    Rain: { wave: "noise", frequency: 6000, attack: 0.3, sustain: 1.5, decay: 0.6, material: "water", matSize: 0.35, matDensity: 0.95, hpCutoff: 800, reverbMix: 0.2 },
+    Stream: { wave: "noise", frequency: 5000, attack: 0.3, sustain: 1.5, decay: 0.5, material: "water", matSize: 0.7, matDensity: 0.8 },
+    Bubbles: { wave: "noise", frequency: 3000, attack: 0.05, sustain: 1, decay: 0.3, material: "water", matDensity: 0.35 },
+    Campfire: { wave: "noise", frequency: 5000, attack: 0.1, sustain: 1.6, decay: 0.4, material: "leaves", matSize: 1.5, matDensity: 0.2, lpCutoff: 6000 },
+    Chains: { wave: "noise", frequency: 6000, sustain: 0.5, decay: 0.2, tremDepth: 0.9, tremRate: 11, material: "metal", matSize: 0.4, matRing: 0.3 },
+    "Wind chimes": { wave: "noise", frequency: 6000, sustain: 0.9, decay: 0.3, tremDepth: 1, tremRate: 5, material: "glass", matSize: 0.7, matRing: 0.8, reverbMix: 0.3 },
+  },
+};
+
+const build = (groups: Record<string, Record<string, P>>, style: PresetStyle): Preset[] =>
+  Object.entries(groups).flatMap(([category, sounds]) =>
+    Object.entries(sounds).map(([name, params], i) => ({
+      name,
+      category,
+      style,
+      // A stable per-preset seed so noise-based presets always sound the same.
+      params: { ...DEFAULTS, seed: 1000 + category.length * 37 + i * 101, ...params },
+    })),
+  );
+
+const GROUPS: [Record<string, Record<string, P>>, PresetStyle][] = [
+  [MODERN, "modern"],
+  [MODERN_MORE, "modern"],
+  [FOLEY, "foley"],
+  [FOLEY_MORE, "foley"],
+  [CLASSIC, "classic"],
+  [CLASSIC_MORE, "classic"],
+];
+
+export const PRESETS: Preset[] = GROUPS.flatMap(([groups, style]) => build(groups, style));
+
+export const CATEGORIES = GROUPS.flatMap(([groups]) => Object.keys(groups));
