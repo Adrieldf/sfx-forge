@@ -34,7 +34,7 @@ function blep(t: number, dt: number): number {
 
 // ---------- instruments: each fills the scratch buffers and returns the sample count ----------
 
-function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => number): number {
+function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => number, bright: number): number {
   const m = Math.ceil((dur + p.r * 5) * sr);
   reserve(m);
   const nv = p.voices ?? 1;
@@ -64,7 +64,9 @@ function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => n
   let rel = 1;
 
   const filter = p.cut < 18000;
-  const base = p.cut * Math.pow(f0 / 261.63, p.track ?? 0) * (0.75 + 0.25 * vel);
+  const base = p.cut * bright * Math.pow(f0 / 261.63, p.track ?? 0) * (0.75 + 0.25 * vel);
+  const drive = p.drive ?? 0;
+  const driveNorm = drive ? 1 / Math.tanh(drive) : 1;
   const kf = Math.exp(-16 / ((p.fd ?? 0.2) * sr));
   const k = 1 / (p.q ?? 0.707);
   let fenv = 1;
@@ -144,13 +146,18 @@ function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => n
         r = v2;
       }
     }
+    if (drive) {
+      // Driven before the envelope, so a note stays gritty as it fades.
+      l = Math.tanh((l * drive) / Math.sqrt(nv)) * driveNorm * Math.sqrt(nv);
+      if (stereo) r = Math.tanh((r * drive) / Math.sqrt(nv)) * driveNorm * Math.sqrt(nv);
+    }
     noteL[i] = l * e * norm;
     if (stereo) noteR[i] = r * e * norm;
   }
   return m;
 }
 
-function playFm(p: FmPatch, f0: number, dur: number, vel: number): number {
+function playFm(p: FmPatch, f0: number, dur: number, vel: number, bright: number): number {
   const m = Math.ceil((dur + p.r * 5) * sr);
   reserve(m);
   const spread = Math.pow(2, (p.spread ?? 0) / 1200) - 1;
@@ -159,7 +166,7 @@ function playFm(p: FmPatch, f0: number, dur: number, vel: number): number {
   const incR = (f0 * (1 - spread)) / sr;
   const incM = (f0 * p.ratio) / sr;
   const incT = (f0 * (p.ratio2 ?? 0)) / sr;
-  const index = p.index * (0.5 + 0.5 * vel);
+  const index = p.index * (0.5 + 0.5 * vel) * Math.sqrt(bright);
   const tine = (p.index2 ?? 0) * vel;
   const ki = Math.exp(-1 / (p.idecay * sr));
   const kt = Math.exp(-1 / (0.03 * sr));
@@ -200,12 +207,13 @@ function playFm(p: FmPatch, f0: number, dur: number, vel: number): number {
 }
 
 /** Karplus-Strong: a burst of noise circulating in a delay line one period long. */
-function playPluck(p: PluckPatch, f0: number, dur: number, vel: number, rnd: () => number): number {
+function playPluck(p: PluckPatch, f0: number, dur: number, vel: number, rnd: () => number, bright: number): number {
   const m = Math.ceil((dur + 0.5) * sr);
   reserve(m);
   noteStereo = false;
   // The loop filter delays the signal a little; an all-pass makes up the fraction so the string stays in tune.
-  const blend = 0.5 + 0.4 * p.bright;
+  const tone = Math.min(1, p.bright * Math.sqrt(bright));
+  const blend = 0.5 + 0.4 * tone;
   const want = sr / f0 - (1 - blend);
   let n = Math.floor(want);
   let frac = want - n;
@@ -220,7 +228,7 @@ function playPluck(p: PluckPatch, f0: number, dur: number, vel: number, rnd: () 
   const durN = dur * sr;
 
   const buf = new Float32Array(n);
-  const soften = 0.15 + 0.85 * p.bright * (0.4 + 0.6 * vel);
+  const soften = 0.15 + 0.85 * tone * (0.4 + 0.6 * vel);
   let lp = 0;
   let mean = 0;
   for (let i = 0; i < n; i++) {
@@ -307,6 +315,14 @@ function playDrum(kind: DrumKind, vel: number, rnd: () => number): number {
       const h = hiss(5000);
       return fill(0.14, (t) => h() * Math.min(1, t / 0.012) * Math.exp(-t / 0.035) * 0.9);
     }
+    case "clave":
+      return fill(0.06, (t) => Math.sin(TAU * 2450 * t) * Math.exp(-t / 0.012));
+    case "congah":
+    case "congal": {
+      const pitch = kind === "congah" ? 340 : 225;
+      const body = sweep(pitch * 1.25, pitch, 0.012);
+      return fill(0.3, (t) => body(t) * Math.exp(-t / 0.085) + noise() * 0.2 * Math.exp(-t / 0.002));
+    }
     case "crash": {
       const h = hiss(4000);
       return fill(1.8, (t) => h() * (0.6 * Math.exp(-t / 0.5) + 0.4 * Math.exp(-t / 0.05)));
@@ -331,6 +347,9 @@ const DRUM_MIX: Record<DrumKind, { gain: number; pan: number; reverb: number }> 
   tomm: { gain: 0.5, pan: 0, reverb: 0.2 },
   toml: { gain: 0.55, pan: 0.3, reverb: 0.2 },
   crash: { gain: 0.2, pan: -0.2, reverb: 0.3 },
+  congah: { gain: 0.5, pan: 0.25, reverb: 0.2 },
+  congal: { gain: 0.6, pan: -0.2, reverb: 0.2 },
+  clave: { gain: 0.3, pan: 0.35, reverb: 0.3 },
 };
 
 // ---------- space ----------
@@ -381,21 +400,39 @@ class Verb {
 
 // ---------- the mix ----------
 
-/** Plays a score. Returns left and right channels at SAMPLE_RATE, exactly `score.seconds` long. */
-export function renderScore(score: Score, seed: number, onProgress?: (fraction: number) => void): { left: Float32Array<ArrayBuffer>; right: Float32Array<ArrayBuffer> } {
+export interface RenderOptions {
+  /** Master gain to use instead of measuring one, so several renders of a piece stay in balance. */
+  gain?: number;
+  /** Stop dead at the end with no fade and no folded tail: the next file carries on from here. */
+  cut?: boolean;
+}
+
+/** Plays a score. Returns left and right channels at SAMPLE_RATE, exactly `score.seconds` long, and the master gain used. */
+export function renderScore(
+  score: Score,
+  seed: number,
+  onProgress?: (fraction: number) => void,
+  options: RenderOptions = {},
+): { left: Float32Array<ArrayBuffer>; right: Float32Array<ArrayBuffer>; gain: number } {
   const outN = Math.round(score.seconds * sr);
-  const tailN = score.loop ? Math.min(outN, LOOP_TAIL * sr) : 0;
+  const tailN = score.loop && !options.cut ? Math.min(outN, LOOP_TAIL * sr) : 0;
   const n = outN + tailN;
   const L = new Float32Array(n);
   const R = new Float32Array(n);
   const revSend = new Float32Array(n);
   const delSend = new Float32Array(n);
-  const rnd = mulberry32(seed ^ 0x5f3759df);
+  // Each note seeds its own noise from what it is and where in the bar it falls, never from what
+  // was rendered before it. A stem, or the same bars after an added intro, then comes out
+  // sample for sample the same as it does in the full mix.
+  const bar = 240 / score.bpm;
+  const noteSeed = (salt: number, t: number, pitch: number) => {
+    const inBar = Math.round((((t % bar) + bar) % bar) * 1000);
+    return mulberry32(seed ^ Math.imul(0x5f3759df, salt + 1) ^ Math.imul(0x27d4eb2f, inBar * 128 + pitch));
+  };
 
   // How far the kick pushes everything else down, sampled every DUCK_HOP samples.
   const duck = new Float32Array(Math.ceil(n / DUCK_HOP) + 2);
-  for (const d of score.drums) {
-    if (d.kind !== "kick") continue;
+  for (const d of score.kicks) {
     const from = Math.floor((d.t * sr) / DUCK_HOP);
     for (let j = from; j < duck.length; j++) {
       const t = ((j - from) * DUCK_HOP) / sr;
@@ -428,6 +465,7 @@ export function renderScore(score: Score, seed: number, onProgress?: (fraction: 
     }
   };
 
+  const bright = score.brightness;
   const totalNotes = score.tracks.reduce((a, t) => a + t.notes.length, 0) + score.drums.length;
   let done = 0;
   const tick = () => {
@@ -436,17 +474,20 @@ export function renderScore(score: Score, seed: number, onProgress?: (fraction: 
 
   for (const tr of score.tracks) {
     const patch = PATCHES[tr.patch];
+    let salt = 0;
+    for (const c of tr.role + tr.patch) salt = (salt * 31 + c.charCodeAt(0)) | 0;
     for (const ev of tr.notes) {
+      const rnd = noteSeed(salt, ev.t, ev.midi);
       const f0 = 440 * Math.pow(2, (ev.midi - 69) / 12);
-      const m = patch.kind === "sub" ? playSub(patch, f0, ev.d, ev.vel, rnd) : patch.kind === "fm" ? playFm(patch, f0, ev.d, ev.vel) : playPluck(patch, f0, ev.d, ev.vel, rnd);
+      const m = patch.kind === "sub" ? playSub(patch, f0, ev.d, ev.vel, rnd, bright) : patch.kind === "fm" ? playFm(patch, f0, ev.d, ev.vel, bright) : playPluck(patch, f0, ev.d, ev.vel, rnd, bright);
       mixIn(Math.floor(ev.t * sr), m, tr.gain, tr.pan, tr.reverb, tr.delay * score.delay.mix, tr.duck);
       tick();
     }
   }
 
-  const tone = score.drumTone < 15000 ? 1 - Math.exp((-TAU * score.drumTone) / sr) : 0;
+  const tone = score.drumTone * bright < 15000 ? 1 - Math.exp((-TAU * score.drumTone * bright) / sr) : 0;
   for (const d of score.drums) {
-    const m = playDrum(d.kind, d.vel, rnd);
+    const m = playDrum(d.kind, d.vel, noteSeed(d.kind.length * 7 + d.kind.charCodeAt(0), d.t, 0));
     if (tone && d.kind !== "kick") {
       let lp = 0;
       for (let i = 0; i < m; i++) noteL[i] = lp += tone * (noteL[i] - lp);
@@ -496,7 +537,9 @@ export function renderScore(score: Score, seed: number, onProgress?: (fraction: 
   }
 
   // A loop gets whatever rings past its end laid over its beginning; a one-off just fades.
-  if (score.loop) {
+  if (options.cut) {
+    // Nothing to do: the audio simply stops where the next file takes over.
+  } else if (score.loop) {
     for (let i = 0; i < tailN; i++) {
       L[i] += L[outN + i];
       R[i] += R[outN + i];
@@ -513,7 +556,7 @@ export function renderScore(score: Score, seed: number, onProgress?: (fraction: 
   let sum = 0;
   for (let i = 0; i < outN; i++) sum += L[i] * L[i] + R[i] * R[i];
   const rms = Math.sqrt(sum / (outN * 2));
-  const gain = rms > 1e-6 ? 0.16 / rms : 0;
+  const gain = options.gain ?? (rms > 1e-6 ? 0.16 / rms : 0);
   const knee = 0.7;
   const room = 0.98 - knee;
   const limit = (x: number) => {
@@ -525,5 +568,5 @@ export function renderScore(score: Score, seed: number, onProgress?: (fraction: 
     R[i] = limit(R[i] * gain);
   }
   onProgress?.(1);
-  return { left: L.slice(0, outN), right: R.slice(0, outN) };
+  return { left: L.slice(0, outN), right: R.slice(0, outN), gain };
 }

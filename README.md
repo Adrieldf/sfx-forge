@@ -77,9 +77,17 @@ The **Music** tab writes a new piece every time: pick a style and a length, and 
 - **Blends** — select up to three styles and each takes charge of part of the band: one brings the rhythm, one the harmony, one the melody. Tempo and busyness meet in the middle.
 - **Length** — 15 s, 30 s, 1, 2 or 3 minutes. The tempo is nudged so whole bars fill the length exactly.
 - **Seamless loop** — the track ends where it starts and the reverb tail is folded back into the first bars, so it repeats without a gap. Turn it off for a piece with an intro and an ending.
-- **Layers** — drop the melody, chords, arpeggio, bass or drums to get a thinner mix, or stems of the same track.
+- **Band** — for each layer (melody, chords, arpeggio, bass, drums): mute it, choose its instrument or drum kit, set its volume, or re-roll just that layer and keep the rest.
+- **Song** — set an exact tempo, the key and the scale, and shift the mood with three sliders: brightness, busyness and space.
 - **Arrangement** — reorder the sections by dragging, change what each one is (intro, theme A, theme B, break, outro), make it longer or shorter two bars at a time, set how full it sounds, and add or remove sections. The themes stay the same tunes wherever you put them.
-- **Recent tracks** — every track is remembered by its settings and seed, and comes back identical.
+- **Key changes and section looping** — each section can be played a few semitones higher or lower, and auditioned on repeat while you edit.
+- **Exports for games** — besides the stereo WAV:
+  - **Stems** — one file per layer plus the mix; the stems add up to the mix exactly, before the final limiter.
+  - **Intensity set** — calm, normal and intense versions that line up bar for bar, for crossfading as the action changes.
+  - **Intro + loop** — a file to play once, then a file to repeat, joining without a gap.
+  - **Stingers** — victory, defeat and level-up jingles in the track's key and instruments.
+  - **MIDI** — the notes, one track per instrument, for a DAW.
+- **Saved and recent tracks, and links** — name a track to keep it, reopen recent ones, or copy a link that opens the exact track. Tracks are stored as settings and a seed, and come back identical.
 
 Tracks avoid sounding like one bar on repeat because they are built in sections (two themes and a quieter break). A theme is a two-bar motif that is stated, answered, contrasted and resolved; each time a section returns it keeps the motif but gets new answering phrases, a different set of instruments and its own drum variations and fills.
 
@@ -143,7 +151,10 @@ src/
 │  ├─ compose.ts           Writes a piece as timed notes: form, chords, melody, parts
 │  ├─ patches.ts           Instrument definitions
 │  ├─ render.ts            Plays a score: instruments, drums, echo, reverb, master
-│  └─ worker.ts            Runs compose + render off the main thread
+│  ├─ options.ts           Validates stored and shared settings; share links
+│  ├─ midi.ts              Score to standard MIDI file
+│  ├─ zip.ts               Minimal ZIP writer for the multi-file exports
+│  └─ worker.ts            Runs compose + render, and the exports, off the main thread
 └─ lib/sfx/
    ├─ synth.ts             The synthesis engine and WAV encoder
    ├─ params.ts            Every slider: range, curve, default, randomizer rules

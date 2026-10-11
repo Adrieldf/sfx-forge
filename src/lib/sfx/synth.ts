@@ -380,6 +380,11 @@ export function render(p: SoundParams): Float32Array<ArrayBuffer> {
 
 /** 16-bit WAV: mono, or stereo when a right channel is given. */
 export function encodeWav(samples: Float32Array, right?: Float32Array): Blob {
+  return new Blob([wavBytes(samples, right)], { type: "audio/wav" });
+}
+
+/** The bytes of a 16-bit WAV file. */
+export function wavBytes(samples: Float32Array, right?: Float32Array): ArrayBuffer {
   const channels = right ? 2 : 1;
   const bytes = samples.length * channels * 2;
   const buf = new ArrayBuffer(44 + bytes);
@@ -408,5 +413,5 @@ export function encodeWav(samples: Float32Array, right?: Float32Array): Blob {
     put(o, samples[i]);
     if (right) put(o + 2, right[i]);
   }
-  return new Blob([buf], { type: "audio/wav" });
+  return buf;
 }

@@ -12,7 +12,8 @@ type Mode = (typeof MODES)[number][0];
 
 /** Both studios stay mounted, so switching tabs keeps the sound and the track you were working on. */
 export default function App() {
-  const [mode, setMode] = useState<Mode>("sfx");
+  // A shared music link (#m=…) opens straight on the Music tab.
+  const [mode, setMode] = useState<Mode>(() => (window.location.hash.startsWith("#m=") ? "music" : "sfx"));
 
   const nav = (
     <nav className="mx-4 mb-3 flex gap-0.5 rounded-md border border-line p-0.5" aria-label="Studio">
