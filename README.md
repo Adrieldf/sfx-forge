@@ -24,7 +24,7 @@ Every sound is synthesized from scratch on your machine. There are no samples, n
 - **Export and share** — 16-bit WAV, copy/paste as JSON, or a link that reopens the exact sound.
 - **My sounds** — a named collection saved in your browser.
 - **Undo/redo and autoplay**, with keyboard shortcuts for the things you do most.
-- **Music** — a second tab that composes whole background tracks in ten styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
+- **Music** — a second tab that composes whole background tracks in twenty styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
 
 ## Mix and match with locks
 
@@ -73,10 +73,12 @@ Above, the Material section is locked on **Gravel** and the *Metal clang* preset
 
 The **Music** tab writes a new piece every time: pick a style and a length, and it chooses a key, a chord progression, a tune and an arrangement, then renders the result to a stereo WAV.
 
-- **Styles** — Upbeat, Cozy, Chill, Action, Adventure, Mysterious, Boss fight, Retro, Dreamy and Sad. Each has its own tempo range, scales, instruments and drum kit.
+- **Styles** — Upbeat, Cozy, Chill, Action, Adventure, Mysterious, Boss fight, Retro, Dreamy, Sad, Epic, Funky, Jazzy, Tropical, Sci-fi, Stealth, Spooky, Victory, Racing and Lullaby. Each has its own tempo range, scales, instruments and drum kit.
+- **Blends** — select up to three styles and each takes charge of part of the band: one brings the rhythm, one the harmony, one the melody. Tempo and busyness meet in the middle.
 - **Length** — 15 s, 30 s, 1, 2 or 3 minutes. The tempo is nudged so whole bars fill the length exactly.
 - **Seamless loop** — the track ends where it starts and the reverb tail is folded back into the first bars, so it repeats without a gap. Turn it off for a piece with an intro and an ending.
 - **Layers** — drop the melody, chords, arpeggio, bass or drums to get a thinner mix, or stems of the same track.
+- **Arrangement** — reorder the sections by dragging, change what each one is (intro, theme A, theme B, break, outro), make it longer or shorter two bars at a time, set how full it sounds, and add or remove sections. The themes stay the same tunes wherever you put them.
 - **Recent tracks** — every track is remembered by its settings and seed, and comes back identical.
 
 Tracks avoid sounding like one bar on repeat because they are built in sections (two themes and a quieter break). A theme is a two-bar motif that is stated, answered, contrasted and resolved; each time a section returns it keeps the motif but gets new answering phrases, a different set of instruments and its own drum variations and fills.
@@ -137,7 +139,7 @@ src/
 │  ├─ ParamSlider.tsx      One labelled slider
 │  └─ Waveform.tsx         Canvas waveform with playhead
 ├─ lib/music/
-│  ├─ styles.ts            The ten styles, plus scales and chord progressions
+│  ├─ styles.ts            The twenty styles, plus scales and chord progressions
 │  ├─ compose.ts           Writes a piece as timed notes: form, chords, melody, parts
 │  ├─ patches.ts           Instrument definitions
 │  ├─ render.ts            Plays a score: instruments, drums, echo, reverb, master

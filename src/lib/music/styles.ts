@@ -209,8 +209,193 @@ const styles = {
     drums: ["none", "half"], drumTone: 5000, drumLevel: 0.5,
     reverb: { size: 0.75, mix: 0.32 }, delay: { steps: 3, mix: 0.2 }, pump: 0, human: 0.01,
   },
+  epic: {
+    label: "Epic",
+    blurb: "Big strings, brass and marching drums — trailers, final levels, world maps",
+    bpm: [92, 112], swing8: 0, swing16: 0,
+    modes: ["minor", "harmonic", "dorian", "major"], sevenths: 0, hr: [2, 1],
+    lead: ["brass", "sawLead"], lead2: ["brass", "softLead", "bell"], leadCentre: 67,
+    pentatonic: false, density: 0.5, sixteenths: 0.1, gate: 0.95,
+    chords: [["stringPad", "sustain"], ["stab", "drive"], ["stringPad", "sustain"]],
+    bass: [["subBass", "root"], ["sawBass", "octave8"], ["subBass", "long"]],
+    arp: ["harp", "bell"], arpRate: [2, 1], arpChance: 0.5,
+    drums: ["march", "heavy"], drumTone: 11000, drumLevel: 0.9,
+    reverb: { size: 0.85, mix: 0.32 }, delay: { steps: 4, mix: 0.1 }, pump: 0, human: 0.004,
+  },
+  funky: {
+    label: "Funky",
+    blurb: "Syncopated bass and choppy chords with a groove — minigames, shops, character select",
+    bpm: [98, 116], swing8: 0, swing16: 0.14,
+    modes: ["dorian", "mixolydian", "dorian", "minor"], sevenths: 0.8, hr: [2, 1],
+    lead: ["squareLead", "epiano", "brass"], lead2: ["brass", "kalimba", "sawLead"], leadCentre: 72,
+    pentatonic: true, density: 0.65, sixteenths: 0.55, gate: 0.6,
+    chords: [["epiano", "comp"], ["stab", "drive"], ["guitar", "strum"]],
+    bass: [["pluckBass", "synco"], ["sawBass", "synco"]],
+    arp: ["kalimba", "chipArp"], arpRate: [1, 2], arpChance: 0.25,
+    drums: ["pop", "break"], drumTone: 14000, drumLevel: 0.9,
+    reverb: { size: 0.4, mix: 0.14 }, delay: { steps: 3, mix: 0.12 }, pump: 0.15, human: 0.005,
+  },
+  jazzy: {
+    label: "Jazzy",
+    blurb: "Swinging walking bass and seventh chords — cafés, detective scenes, late nights",
+    bpm: [96, 128], swing8: 0.62, swing16: 0,
+    modes: ["major", "dorian", "mixolydian", "minor"], sevenths: 1, hr: [1, 1, 2],
+    lead: ["epiano", "softLead", "brass"], lead2: ["softLead", "bell", "epiano"], leadCentre: 72,
+    pentatonic: false, density: 0.6, sixteenths: 0.05, gate: 0.85,
+    chords: [["epiano", "comp"], ["guitar", "strum"]],
+    bass: [["pluckBass", "walk"]],
+    arp: ["bell", "harp"], arpRate: [2], arpChance: 0.1,
+    drums: ["brush", "lofi"], drumTone: 9000, drumLevel: 0.75,
+    reverb: { size: 0.5, mix: 0.2 }, delay: { steps: 3, mix: 0.08 }, pump: 0, human: 0.01,
+  },
+  tropical: {
+    label: "Tropical",
+    blurb: "Sunny mallets and off-beat chords — beaches, islands, summer levels",
+    bpm: [96, 114], swing8: 0, swing16: 0.08,
+    modes: ["major", "major", "mixolydian"], sevenths: 0.3, hr: [1, 2],
+    lead: ["kalimba", "softLead", "bell"], lead2: ["kalimba", "harp", "softLead"], leadCentre: 76,
+    pentatonic: true, density: 0.65, sixteenths: 0.3, gate: 0.8,
+    chords: [["guitar", "strum"], ["stab", "offbeat"], ["epiano", "comp"]],
+    bass: [["pluckBass", "synco"], ["subBass", "root"]],
+    arp: ["kalimba", "harp"], arpRate: [2, 1, 3], arpChance: 0.6,
+    drums: ["pop", "brush"], drumTone: 12000, drumLevel: 0.8,
+    reverb: { size: 0.5, mix: 0.2 }, delay: { steps: 3, mix: 0.2 }, pump: 0.1, human: 0.006,
+  },
+  scifi: {
+    label: "Sci-fi",
+    blurb: "Pulsing synths and glassy pads — space stations, labs, neon cities",
+    bpm: [100, 124], swing8: 0, swing16: 0,
+    modes: ["dorian", "lydian", "minor", "phrygian"], sevenths: 0.4, hr: [2],
+    lead: ["sawLead", "bell", "triLead"], lead2: ["bell", "squareLead", "softLead"], leadCentre: 74,
+    pentatonic: true, density: 0.45, sixteenths: 0.2, gate: 0.9,
+    chords: [["glassPad", "sustain"], ["warmPad", "sustain"], ["stab", "drive"]],
+    bass: [["sawBass", "octave8"], ["sawBass", "pedal16"], ["subBass", "long"]],
+    arp: ["chipArp", "bell"], arpRate: [1, 3], arpChance: 0.9,
+    drums: ["four", "half"], drumTone: 13000, drumLevel: 0.8,
+    reverb: { size: 0.8, mix: 0.3 }, delay: { steps: 3, mix: 0.3 }, pump: 0.3, human: 0,
+  },
+  stealth: {
+    label: "Stealth",
+    blurb: "Tense, quiet and ticking — sneaking, heists, countdowns",
+    bpm: [84, 104], swing8: 0, swing16: 0,
+    modes: ["minor", "phrygian", "dorian", "harmonic"], sevenths: 0.3, hr: [2],
+    lead: ["bell", "softLead", "epiano"], lead2: ["harp", "kalimba", "triLead"], leadCentre: 70,
+    pentatonic: true, density: 0.3, sixteenths: 0.25, gate: 0.6,
+    chords: [["glassPad", "sustain"], ["epiano", "comp"], ["stab", "drive"]],
+    bass: [["pluckBass", "synco"], ["sawBass", "pedal16"], ["subBass", "root"]],
+    arp: ["kalimba", "chipArp"], arpRate: [1, 2], arpChance: 0.5,
+    drums: ["half", "brush"], drumTone: 8000, drumLevel: 0.7,
+    reverb: { size: 0.6, mix: 0.24 }, delay: { steps: 3, mix: 0.3 }, pump: 0, human: 0.003,
+  },
+  spooky: {
+    label: "Spooky",
+    blurb: "Creepy bells and uneasy harmony — haunted houses, graveyards, Halloween",
+    bpm: [72, 96], swing8: 0, swing16: 0,
+    modes: ["harmonic", "phrygian", "harmonic"], sevenths: 0.1, hr: [2, 1],
+    lead: ["musicBox", "bell", "softLead"], lead2: ["bell", "harp", "musicBox"], leadCentre: 76,
+    pentatonic: false, density: 0.4, sixteenths: 0.05, gate: 0.9,
+    chords: [["stringPad", "sustain"], ["harp", "broken"], ["glassPad", "sustain"]],
+    bass: [["subBass", "long"], ["pluckBass", "walk"]],
+    arp: ["musicBox", "bell"], arpRate: [2, 3], arpChance: 0.5,
+    drums: ["half", "none", "brush"], drumTone: 6000, drumLevel: 0.6,
+    reverb: { size: 0.9, mix: 0.38 }, delay: { steps: 3, mix: 0.25 }, pump: 0, human: 0.008,
+  },
+  victory: {
+    label: "Victory",
+    blurb: "Triumphant and fanfare-like — level clear, rewards, results screens",
+    bpm: [118, 138], swing8: 0, swing16: 0,
+    modes: ["major", "major", "lydian", "mixolydian"], sevenths: 0, hr: [1, 2],
+    lead: ["brass", "squareLead", "sawLead"], lead2: ["bell", "brass", "squareLead"], leadCentre: 72,
+    pentatonic: false, density: 0.7, sixteenths: 0.35, gate: 0.75,
+    chords: [["stab", "drive"], ["stringPad", "sustain"], ["harp", "strum"]],
+    bass: [["pluckBass", "root"], ["sawBass", "octave8"]],
+    arp: ["harp", "bell", "chipArp"], arpRate: [1, 2], arpChance: 0.5,
+    drums: ["march", "pop"], drumTone: 15000, drumLevel: 0.85,
+    reverb: { size: 0.6, mix: 0.22 }, delay: { steps: 3, mix: 0.12 }, pump: 0.1, human: 0.003,
+  },
+  racing: {
+    label: "Racing",
+    blurb: "Fast, bright and non-stop — racing, runners, rhythm sections",
+    bpm: [150, 172], swing8: 0, swing16: 0,
+    modes: ["mixolydian", "major", "dorian", "minor"], sevenths: 0.1, hr: [2, 1],
+    lead: ["sawLead", "squareLead"], lead2: ["squareLead", "bell", "sawLead"], leadCentre: 74,
+    pentatonic: true, density: 0.75, sixteenths: 0.3, gate: 0.8,
+    chords: [["stab", "offbeat"], ["stab", "drive"], ["warmPad", "sustain"]],
+    bass: [["sawBass", "octave8"], ["pluckBass", "octave8"]],
+    arp: ["chipArp", "kalimba"], arpRate: [1], arpChance: 0.6,
+    drums: ["four", "break"], drumTone: 16000, drumLevel: 0.85,
+    reverb: { size: 0.45, mix: 0.14 }, delay: { steps: 3, mix: 0.18 }, pump: 0.4, human: 0.002,
+  },
+  lullaby: {
+    label: "Lullaby",
+    blurb: "A soft music box with almost nothing else — save rooms, bedtime, credits",
+    bpm: [64, 80], swing8: 0, swing16: 0,
+    modes: ["major", "major", "lydian"], sevenths: 0.3, hr: [1, 2],
+    lead: ["musicBox", "kalimba"], lead2: ["musicBox", "harp", "softLead"], leadCentre: 79,
+    pentatonic: true, density: 0.45, sixteenths: 0, gate: 1,
+    chords: [["harp", "broken"], ["epiano", "broken"], ["glassPad", "sustain"]],
+    bass: [["subBass", "long"]],
+    arp: ["harp", "musicBox"], arpRate: [2, 4], arpChance: 0.2,
+    drums: ["none"], drumTone: 5000, drumLevel: 0.4,
+    reverb: { size: 0.7, mix: 0.32 }, delay: { steps: 3, mix: 0.18 }, pump: 0, human: 0.012,
+  },
 } satisfies Record<string, StyleDef>;
 
 export type StyleId = keyof typeof styles;
 export const STYLES: Record<StyleId, StyleDef> = styles;
 export const STYLE_IDS = Object.keys(styles) as StyleId[];
+
+export const MAX_BLEND = 3;
+
+/**
+ * Combines up to MAX_BLEND styles into one. Rather than averaging everything into mush,
+ * each style is put in charge of a part of the band: one brings the rhythm (drums and
+ * swing), one the harmony (scales and chords), one the melody, and the bass and arpeggio
+ * are shared out. Only the things that have a sensible middle are averaged: tempo,
+ * how busy the tune is, and the amount of space.
+ */
+export function blendStyles(ids: StyleId[], rnd: () => number): { style: StyleDef; recipe: string } {
+  const picked = [...new Set(ids)].slice(0, MAX_BLEND);
+  if (picked.length < 2) return { style: STYLES[picked[0] ?? "upbeat"], recipe: "" };
+  // Who leads what changes from track to track.
+  for (let i = picked.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [picked[i], picked[j]] = [picked[j], picked[i]];
+  }
+  const all = picked.map((id) => STYLES[id]);
+  const n = all.length;
+  const mean = (f: (s: StyleDef) => number) => all.reduce((a, s) => a + f(s), 0) / n;
+  const [rhythm, harmony, melody, bass, arp] = [0, 1, 2, 3, 4].map((k) => all[k % n]);
+  return {
+    recipe: `Rhythm from ${rhythm.label}, harmony from ${harmony.label}, melody from ${melody.label}`,
+    style: {
+      label: ids.filter((id) => picked.includes(id)).map((id) => STYLES[id].label).filter((l, i, a) => a.indexOf(l) === i).join(" + "),
+      blurb: "",
+      bpm: [mean((s) => s.bpm[0]), mean((s) => s.bpm[1])],
+      swing8: rhythm.swing8,
+      swing16: rhythm.swing16,
+      drums: rhythm.drums,
+      drumTone: rhythm.drumTone,
+      drumLevel: rhythm.drumLevel,
+      pump: rhythm.pump,
+      modes: harmony.modes,
+      sevenths: harmony.sevenths,
+      hr: harmony.hr,
+      chords: harmony.chords,
+      lead: melody.lead,
+      lead2: melody.lead2,
+      leadCentre: melody.leadCentre,
+      pentatonic: melody.pentatonic,
+      gate: melody.gate,
+      density: mean((s) => s.density),
+      sixteenths: mean((s) => s.sixteenths),
+      bass: bass.bass,
+      arp: arp.arp,
+      arpRate: arp.arpRate,
+      arpChance: mean((s) => s.arpChance),
+      reverb: { size: mean((s) => s.reverb.size), mix: mean((s) => s.reverb.mix) },
+      delay: { steps: melody.delay.steps, mix: mean((s) => s.delay.mix) },
+      human: mean((s) => s.human),
+    },
+  };
+}

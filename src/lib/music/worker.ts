@@ -11,6 +11,6 @@ const post = (reply: WorkerReply, transfer: Transferable[] = []) => (self as unk
 self.onmessage = (e: MessageEvent<MusicOptions>) => {
   const score = compose(e.data);
   const { left, right } = renderScore(score, e.data.seed, (fraction) => post({ type: "progress", fraction }));
-  const { bpm, key, bars, seconds, sections, instruments } = score;
-  post({ type: "done", left, right, info: { bpm, key, bars, seconds, sections, instruments } }, [left.buffer, right.buffer]);
+  const { style, recipe, bpm, key, bars, seconds, sections, instruments } = score;
+  post({ type: "done", left, right, info: { style, recipe, bpm, key, bars, seconds, sections, instruments } }, [left.buffer, right.buffer]);
 };

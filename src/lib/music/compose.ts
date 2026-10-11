@@ -1,6 +1,6 @@
 import { mulberry32 } from "../sfx/synth";
 import { PATCHES, type PatchId } from "./patches";
-import { MODES, STYLES, type BassPattern, type ChordPattern, type DrumPattern, type StyleId } from "./styles";
+import { MODES, blendStyles, type BassPattern, type ChordPattern, type DrumPattern, type StyleId } from "./styles";
 
 /**
  * Writes a piece of music as a list of timed notes. Nothing here makes sound; render.ts
@@ -25,13 +25,32 @@ export interface Layers {
 export const ALL_LAYERS: Layers = { melody: true, chords: true, arp: true, bass: true, drums: true };
 
 export interface MusicOptions {
-  style: StyleId;
+  /** One style, or up to three to blend. */
+  styles: StyleId[];
   seconds: number;
   /** Ends exactly where it starts, with the reverb tail folded back to the top. */
   loop: boolean;
   seed: number;
   layers: Layers;
+  /** A hand-made arrangement. It sets the length itself, so `seconds` is ignored. */
+  form?: Form;
 }
+
+export type SectionKind = "intro" | "a" | "b" | "c" | "outro";
+export interface FormSection {
+  kind: SectionKind;
+  /** An even number of bars: tunes are written in two-bar phrases. */
+  bars: number;
+  /** 0..1: how many instruments play, and how hard. Left out, the composer decides. */
+  energy?: number;
+}
+export interface Form {
+  bpm: number;
+  sections: FormSection[];
+}
+export const SECTION_LABELS: Record<SectionKind, string> = { intro: "Intro", a: "Theme A", b: "Theme B", c: "Break", outro: "Outro" };
+export const MIN_SECTION_BARS = 2;
+export const MAX_SECTION_BARS = 16;
 
 export type DrumKind = "kick" | "snare" | "clap" | "rim" | "hat" | "ohat" | "shaker" | "tomh" | "tomm" | "toml" | "crash";
 export type Role = "lead" | "answer" | "chords" | "arp" | "bass";
@@ -59,13 +78,17 @@ export interface DrumEvent {
 }
 export interface SectionInfo {
   label: string;
-  kind: "intro" | "a" | "b" | "c" | "outro";
+  kind: SectionKind;
   start: number;
   end: number;
   bars: number;
   energy: number;
 }
 export interface ScoreInfo {
+  /** Style name, or the names of a blend joined with "+". */
+  style: string;
+  /** For a blend, which style supplied which part of the band. */
+  recipe: string;
   bpm: number;
   key: string;
   bars: number;
@@ -238,8 +261,9 @@ const FORM = "AABACBABACBA";
 const CHORD_LOW = 55;
 
 export function compose(o: MusicOptions): Score {
-  const st = STYLES[o.style];
-  const rnd = mulberry32(o.seed);
+  // Reassigned per section further down, so every helper below draws from the current stream.
+  let rnd = mulberry32(o.seed);
+  const { style: st, recipe } = blendStyles(o.styles, rnd);
   const pick = <X,>(a: readonly X[]): X => a[Math.floor(rnd() * a.length)];
   const chance = (p: number) => rnd() < p;
   const weighted = (w: number[]) => {
@@ -249,13 +273,14 @@ export function compose(o: MusicOptions): Score {
   };
 
   // ----- time: pick a tempo, then bend it so whole bars fill the length exactly -----
-  const ringOut = o.loop ? 0 : Math.min(3, o.seconds * 0.2);
-  const musicLen = o.seconds - ringOut;
+  const formBars = o.form?.sections.reduce((a, f) => a + f.bars, 0) ?? 0;
+  const ringOut = o.loop ? 0 : o.form ? 3 : Math.min(3, o.seconds * 0.2);
+  const musicLen = o.form ? (formBars * 240) / o.form.bpm : o.seconds - ringOut;
   const estimate = (musicLen * (st.bpm[0] + rnd() * (st.bpm[1] - st.bpm[0]))) / 240;
   // Prefer a bar count in fours, then in twos, that keeps the tempo inside the style's range.
   const inRange = (b: number) => b >= 2 && (b * 240) / musicLen >= st.bpm[0] * 0.97 && (b * 240) / musicLen <= st.bpm[1] * 1.03;
   const near = (unit: number) => [0, 1, -1].map((k) => (Math.round(estimate / unit) + k) * unit).find(inRange) ?? 0;
-  const bars = near(4) || near(2) || Math.max(2, Math.round(estimate / 2) * 2);
+  const bars = formBars || near(4) || near(2) || Math.max(2, Math.round(estimate / 2) * 2);
   const stepDur = musicLen / (bars * 16);
   const swing = [0, st.swing16, st.swing8, st.swing8 * 0.5 + st.swing16];
   const at = (step: number) => (step + swing[Math.floor(step) & 3]) * stepDur;
@@ -358,7 +383,20 @@ export function compose(o: MusicOptions): Score {
 
   // ----- form -----
   const sections: Section[] = [];
-  if (bars < 16) {
+  const usualEnergy = (letter: Letter, variant: number) => (letter === "C" ? 0.4 : letter === "B" ? (variant ? 1 : 0.9) : [0.65, 0.8, 0.9][Math.min(variant, 2)]);
+  if (o.form) {
+    const seen = { A: 0, B: 0, C: 0 };
+    let bar = 0;
+    o.form.sections.forEach((f, i) => {
+      const letter: Letter = f.kind === "b" ? "B" : f.kind === "c" ? "C" : "A";
+      const kind = f.kind === "intro" || f.kind === "outro" ? f.kind : "body";
+      const variant = kind === "body" ? seen[letter]++ : kind === "outro" ? 9 : 0;
+      const energy = f.energy ?? (kind === "intro" ? 0.3 : kind === "outro" ? 0.5 : usualEnergy(letter, variant));
+      const next = o.form!.sections[i + 1];
+      sections.push({ kind, letter, bar0: bar, bars: f.bars, energy, variant, turn: kind !== "intro" && (!next || next.kind !== f.kind) });
+      bar += f.bars;
+    });
+  } else if (bars < 16) {
     sections.push({ kind: "body", letter: "A", bar0: 0, bars, energy: 0.8, variant: 0, turn: o.loop });
   } else {
     const edge = o.loop ? 0 : 4;
@@ -384,7 +422,7 @@ export function compose(o: MusicOptions): Score {
     letters.forEach((letter, i) => {
       const variant = seen[letter]++;
       const last = i === letters.length - 1;
-      let energy = letter === "C" ? 0.4 : letter === "B" ? (variant ? 1 : 0.9) : [0.65, 0.8, 0.9][Math.min(variant, 2)];
+      let energy = usualEnergy(letter, variant);
       if (last && !o.loop && letter !== "C") energy = Math.max(energy, 0.9);
       sections.push({ kind: "body", letter, bar0: bar, bars: lens[i], energy, variant, turn: last || letters[i + 1] !== letter });
       bar += lens[i];
@@ -613,6 +651,9 @@ export function compose(o: MusicOptions): Score {
   for (const sec of sections) {
     const mat = materials[sec.letter];
     const e = sec.energy;
+    // Each section draws from its own stream, named by what it is and which return of it this is.
+    // Moving, resizing or removing one section then leaves the notes of the others alone.
+    rnd = mulberry32(o.seed ^ Math.imul(0x9e3779b1, 1 + "ABC".indexOf(sec.letter) + 4 * ["intro", "body", "outro"].indexOf(sec.kind) + 16 * sec.variant));
     writeChords(sec, mat);
     if (sec.kind === "intro") {
       writeArp(sec, mat);
@@ -644,16 +685,17 @@ export function compose(o: MusicOptions): Score {
   const names = (roles: Role[]) => [...new Set(all.filter((t) => roles.includes(t.role)).map((t) => PATCHES[t.patch].name))];
   const kits = [...new Set(sections.filter((s) => s.energy >= 0.45).map((s) => materials[s.letter].drums))].flatMap((d) => (d === "none" ? [] : [KITS[d].name]));
   const on = (role: Role) => (role === "bass" ? o.layers.bass : role === "chords" ? o.layers.chords : role === "arp" ? o.layers.arp : o.layers.melody);
-  const LABEL = { A: "Theme A", B: "Theme B", C: "Break" };
 
   return {
+    style: st.label,
+    recipe,
     bpm: 15 / stepDur,
     key: `${NOTE_NAMES[tonic]} ${mode.label}`,
     bars,
-    seconds: o.seconds,
+    seconds: musicLen + ringOut,
     loop: o.loop,
     sections: sections.map((s) => ({
-      label: s.kind === "intro" ? "Intro" : s.kind === "outro" ? "Outro" : LABEL[s.letter],
+      label: SECTION_LABELS[s.kind === "body" ? (s.letter.toLowerCase() as "a" | "b" | "c") : s.kind],
       kind: s.kind === "body" ? (s.letter.toLowerCase() as "a" | "b" | "c") : s.kind,
       start: s.bar0 * 16 * stepDur,
       end: (s.bar0 + s.bars) * 16 * stepDur,
