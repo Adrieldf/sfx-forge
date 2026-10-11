@@ -225,7 +225,7 @@ function IconBtn({ d, onClick, title, active }: { d: string; onClick: () => void
 
 // ---------- studio ----------
 
-export default function Studio() {
+export default function Studio({ active, nav }: { active: boolean; nav: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
   const { params } = state;
   const [locks, setLocks] = useState<Locks>(NO_LOCKS);
@@ -378,6 +378,7 @@ export default function Studio() {
       interactedRef.current = true;
     };
     const onKey = (e: KeyboardEvent) => {
+      if (!active) return;
       touch();
       const el = e.target as HTMLElement;
       const typing = el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && (el as HTMLInputElement).type !== "range");
@@ -404,7 +405,7 @@ export default function Studio() {
       window.removeEventListener("pointerdown", touch);
       window.removeEventListener("keydown", onKey);
     };
-  }, [play, samples, randomize, mutate]);
+  }, [active, play, samples, randomize, mutate]);
 
   // ----- derived -----
   const q = query.trim().toLowerCase();
@@ -446,6 +447,7 @@ export default function Studio() {
           </h1>
           <span className="text-xs text-mute">game &amp; UI sound effects</span>
         </div>
+        {nav}
 
         <div className="flex gap-1 px-4">
           {(["presets", "saved"] as const).map((t) => (

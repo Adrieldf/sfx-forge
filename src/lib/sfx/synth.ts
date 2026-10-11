@@ -6,7 +6,7 @@ export const SAMPLE_RATE = 44100;
 const MAX_SECONDS = 10;
 const TAU = Math.PI * 2;
 
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed | 0;
   return () => {
     a = (a + 0x6d2b79f5) | 0;
@@ -378,29 +378,35 @@ export function render(p: SoundParams): Float32Array<ArrayBuffer> {
   return out.subarray(0, end) as Float32Array<ArrayBuffer>;
 }
 
-/** 16-bit mono WAV. */
-export function encodeWav(samples: Float32Array): Blob {
-  const buf = new ArrayBuffer(44 + samples.length * 2);
+/** 16-bit WAV: mono, or stereo when a right channel is given. */
+export function encodeWav(samples: Float32Array, right?: Float32Array): Blob {
+  const channels = right ? 2 : 1;
+  const bytes = samples.length * channels * 2;
+  const buf = new ArrayBuffer(44 + bytes);
   const v = new DataView(buf);
   const str = (o: number, s: string) => {
     for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
   };
   str(0, "RIFF");
-  v.setUint32(4, 36 + samples.length * 2, true);
+  v.setUint32(4, 36 + bytes, true);
   str(8, "WAVE");
   str(12, "fmt ");
   v.setUint32(16, 16, true);
   v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true);
+  v.setUint16(22, channels, true);
   v.setUint32(24, SAMPLE_RATE, true);
-  v.setUint32(28, SAMPLE_RATE * 2, true);
-  v.setUint16(32, 2, true);
+  v.setUint32(28, SAMPLE_RATE * channels * 2, true);
+  v.setUint16(32, channels * 2, true);
   v.setUint16(34, 16, true);
   str(36, "data");
-  v.setUint32(40, samples.length * 2, true);
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  v.setUint32(40, bytes, true);
+  const put = (o: number, x: number) => {
+    const s = Math.max(-1, Math.min(1, x));
+    v.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  };
+  for (let i = 0, o = 44; i < samples.length; i++, o += channels * 2) {
+    put(o, samples[i]);
+    if (right) put(o + 2, right[i]);
   }
   return new Blob([buf], { type: "audio/wav" });
 }

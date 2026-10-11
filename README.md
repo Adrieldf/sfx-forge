@@ -21,9 +21,10 @@ Every sound is synthesized from scratch on your machine. There are no samples, n
 - **Mutate and Randomize** — nudge the current sound for near-variants, or roll a new one. Every section also has its own dice and reset buttons.
 - **Materials** — run any sound through wood, stone, metal, glass, grass, gravel, water and more.
 - **Sequencer** — turn one sound into a jingle with a short text score such as `0 4 7 12`.
-- **Export and share** — 16-bit mono WAV, copy/paste as JSON, or a link that reopens the exact sound.
+- **Export and share** — 16-bit WAV, copy/paste as JSON, or a link that reopens the exact sound.
 - **My sounds** — a named collection saved in your browser.
 - **Undo/redo and autoplay**, with keyboard shortcuts for the things you do most.
+- **Music** — a second tab that composes whole background tracks in ten styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
 
 ## Mix and match with locks
 
@@ -68,6 +69,18 @@ Above, the Material section is locked on **Gravel** and the *Metal clang* preset
 </tr>
 </table>
 
+## Music
+
+The **Music** tab writes a new piece every time: pick a style and a length, and it chooses a key, a chord progression, a tune and an arrangement, then renders the result to a stereo WAV.
+
+- **Styles** — Upbeat, Cozy, Chill, Action, Adventure, Mysterious, Boss fight, Retro, Dreamy and Sad. Each has its own tempo range, scales, instruments and drum kit.
+- **Length** — 15 s, 30 s, 1, 2 or 3 minutes. The tempo is nudged so whole bars fill the length exactly.
+- **Seamless loop** — the track ends where it starts and the reverb tail is folded back into the first bars, so it repeats without a gap. Turn it off for a piece with an intro and an ending.
+- **Layers** — drop the melody, chords, arpeggio, bass or drums to get a thinner mix, or stems of the same track.
+- **Recent tracks** — every track is remembered by its settings and seed, and comes back identical.
+
+Tracks avoid sounding like one bar on repeat because they are built in sections (two themes and a quieter break). A theme is a two-bar motif that is stated, answered, contrasted and resolved; each time a section returns it keeps the motif but gets new answering phrases, a different set of instruments and its own drum variations and fills.
+
 ## Getting started
 
 Requires Node.js 20.9 or newer.
@@ -89,7 +102,8 @@ Then open <http://localhost:3000>.
 
 | Key | Action |
 |---|---|
-| <kbd>Space</kbd> | Play |
+| <kbd>Space</kbd> | Play (in Music: play or stop) |
+| <kbd>G</kbd> | Music: generate another track |
 | <kbd>R</kbd> | Randomize |
 | <kbd>M</kbd> | Mutate |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Undo |
@@ -117,9 +131,17 @@ Output is normalized to the Volume slider, so every export peaks at the same lev
 src/
 ├─ app/                    Next.js app router shell (layout, page, global styles)
 ├─ components/
-│  ├─ Studio.tsx           The whole interface: library, transport, sections
+│  ├─ App.tsx              Switches between the two studios
+│  ├─ Studio.tsx           Sound effects: library, transport, sections
+│  ├─ MusicStudio.tsx      Music: style and length options, transport, track details
 │  ├─ ParamSlider.tsx      One labelled slider
 │  └─ Waveform.tsx         Canvas waveform with playhead
+├─ lib/music/
+│  ├─ styles.ts            The ten styles, plus scales and chord progressions
+│  ├─ compose.ts           Writes a piece as timed notes: form, chords, melody, parts
+│  ├─ patches.ts           Instrument definitions
+│  ├─ render.ts            Plays a score: instruments, drums, echo, reverb, master
+│  └─ worker.ts            Runs compose + render off the main thread
 └─ lib/sfx/
    ├─ synth.ts             The synthesis engine and WAV encoder
    ├─ params.ts            Every slider: range, curve, default, randomizer rules

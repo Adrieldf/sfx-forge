@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SFX Forge — game sound effect generator",
-  description: "Design sound effects for game actions and UI in the browser. Presets, sliders, WAV export.",
+  title: "SFX Forge — game sound effect and music generator",
+  description: "Design sound effects and generate background music for games in the browser. Presets, sliders, WAV export.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
