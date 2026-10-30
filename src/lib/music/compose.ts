@@ -1,6 +1,7 @@
 import { mulberry32 } from "../sfx/synth";
+import type { AmbienceId } from "./ambience";
 import { PATCHES, type PatchId } from "./patches";
-import { MODES, blendStyles, type BassPattern, type ChordPattern, type DrumPattern, type ModeId, type StyleDef, type StyleId } from "./styles";
+import { MODES, blendStyles, defaultAtmos, type BassPattern, type ChordPattern, type DrumPattern, type ModeId, type StyleDef, type StyleId } from "./styles";
 
 /**
  * Writes a piece of music as a list of timed notes. Nothing here makes sound; render.ts
@@ -49,6 +50,10 @@ export interface MusicOptions {
   mood?: Mood;
   /** Writes a short jingle in the track's key and instruments instead of the track. */
   stinger?: StingerKind;
+  /** Background textures, 0..1 each. Given, it replaces the style's own (an empty object means none). */
+  ambience?: Partial<Record<AmbienceId, number>>;
+  /** Worn-tape effect, 0..1. Left out, the style decides. */
+  tape?: number;
 }
 
 export interface Instruments {
@@ -145,6 +150,8 @@ export interface Score extends ScoreInfo {
   drumLevel: number;
   reverb: { size: number; mix: number };
   delay: { seconds: number; mix: number };
+  /** The textures and tape to render with, after the style's defaults are applied. */
+  atmos: { tape: number; ambience: Partial<Record<AmbienceId, number>> };
 }
 
 const NOTE_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
@@ -898,5 +905,9 @@ export function compose(o: MusicOptions): Score {
     drumLevel: st.drumLevel * (o.levels?.drums ?? 1),
     reverb: st.reverb,
     delay: { seconds: st.delay.steps * stepDur, mix: st.delay.mix },
+    atmos: (() => {
+      const base = defaultAtmos(o.styles);
+      return { tape: clamp(o.tape ?? base.tape, 0, 1), ambience: o.stinger ? {} : o.ambience ?? base.ambience };
+    })(),
   };
 }

@@ -28,11 +28,11 @@ export default function Waveform({ samples, getProgress }: Props) {
       if (!g) return;
       g.clearRect(0, 0, w, h);
       const mid = h / 2;
-      g.fillStyle = "#2a2e34";
+      g.fillStyle = "#34332f";
       g.fillRect(0, Math.floor(mid), w, 1);
       if (!samples.length) return;
 
-      g.fillStyle = "#5fd4b8";
+      g.fillStyle = "#6fc3ad";
       const per = samples.length / w;
       for (let x = 0; x < w; x++) {
         const from = Math.floor(x * per);

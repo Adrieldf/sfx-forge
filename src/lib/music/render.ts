@@ -1,4 +1,5 @@
 import { SAMPLE_RATE, mulberry32 } from "../sfx/synth";
+import { applyTape, renderAmbience } from "./ambience";
 import type { DrumKind, Score } from "./compose";
 import { PATCHES, type FmPatch, type PluckPatch, type SubPatch } from "./patches";
 
@@ -552,6 +553,8 @@ export function renderScore(
     }
   }
 
+  applyTape([L, R], outN, score.atmos.tape, seed, score.loop && !options.cut);
+
   // Master: a steady loudness whatever the style, with peaks rounded off rather than clipped.
   let sum = 0;
   for (let i = 0; i < outN; i++) sum += L[i] * L[i] + R[i] * R[i];
@@ -563,9 +566,11 @@ export function renderScore(
     const a = Math.abs(x);
     return a <= knee ? x : Math.sign(x) * (knee + room * Math.tanh((a - knee) / room));
   };
+  // The textures sit outside the loudness measurement, so rain stays rain however loud the band is.
+  const bed = renderAmbience(score.atmos.ambience, outN, seed, score.loop && !options.cut);
   for (let i = 0; i < outN; i++) {
-    L[i] = limit(L[i] * gain);
-    R[i] = limit(R[i] * gain);
+    L[i] = limit(L[i] * gain + (bed ? bed.left[i] : 0));
+    R[i] = limit(R[i] * gain + (bed ? bed.right[i] : 0));
   }
   onProgress?.(1);
   return { left: L.slice(0, outN), right: R.slice(0, outN), gain };

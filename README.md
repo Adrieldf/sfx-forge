@@ -24,7 +24,7 @@ Every sound is synthesized from scratch on your machine. There are no samples, n
 - **Export and share** — 16-bit WAV, copy/paste as JSON, or a link that reopens the exact sound.
 - **My sounds** — a named collection saved in your browser.
 - **Undo/redo and autoplay**, with keyboard shortcuts for the things you do most.
-- **Music** — a second tab that composes whole background tracks in twenty styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
+- **Music** — a second tab that composes whole background tracks in twenty-eight styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
 
 ## Mix and match with locks
 
@@ -73,12 +73,13 @@ Above, the Material section is locked on **Gravel** and the *Metal clang* preset
 
 The **Music** tab writes a new piece every time: pick a style and a length, and it chooses a key, a chord progression, a tune and an arrangement, then renders the result to a stereo WAV.
 
-- **Styles** — Upbeat, Cozy, Chill, Action, Adventure, Mysterious, Boss fight, Retro, Dreamy, Sad, Epic, Funky, Jazzy, Tropical, Sci-fi, Stealth, Spooky, Victory, Racing and Lullaby. Each has its own tempo range, scales, instruments and drum kit.
+- **Styles** — Upbeat, Cozy, Chill, Action, Adventure, Mysterious, Boss fight, Retro, Dreamy, Sad, Epic, Funky, Jazzy, Tropical, Sci-fi, Stealth, Spooky, Victory, Racing and Lullaby, plus a calm and cosy set: Lo-fi, Rainy day, Campfire, Café, Meadow, Snowfall, Seaside and Quiet night. Each has its own tempo range, scales, instruments and drum kit.
 - **Blends** — select up to three styles and each takes charge of part of the band: one brings the rhythm, one the harmony, one the melody. Tempo and busyness meet in the middle.
 - **Length** — 15 s, 30 s, 1, 2 or 3 minutes. The tempo is nudged so whole bars fill the length exactly.
 - **Seamless loop** — the track ends where it starts and the reverb tail is folded back into the first bars, so it repeats without a gap. Turn it off for a piece with an intro and an ending.
 - **Band** — for each layer (melody, chords, arpeggio, bass, drums): mute it, choose its instrument or drum kit, set its volume, or re-roll just that layer and keep the rest.
 - **Song** — set an exact tempo, the key and the scale, and shift the mood with three sliders: brightness, busyness and space.
+- **Atmosphere** — background textures (rain, vinyl crackle, fireplace, wind, crickets, waves, birdsong) and a worn-tape effect (pitch drift, rolled-off highs, soft clipping). The calm styles come with a fitting one switched on; every level is yours to change. Textures are generated from noise and tones, loop seamlessly, and come as their own file in the Stems export.
 - **Arrangement** — reorder the sections by dragging, change what each one is (intro, theme A, theme B, break, outro), make it longer or shorter two bars at a time, set how full it sounds, and add or remove sections. The themes stay the same tunes wherever you put them.
 - **Key changes and section looping** — each section can be played a few semitones higher or lower, and auditioned on repeat while you edit.
 - **Exports for games** — besides the stereo WAV:
@@ -87,9 +88,18 @@ The **Music** tab writes a new piece every time: pick a style and a length, and 
   - **Intro + loop** — a file to play once, then a file to repeat, joining without a gap.
   - **Stingers** — victory, defeat and level-up jingles in the track's key and instruments.
   - **MIDI** — the notes, one track per instrument, for a DAW.
+- **How this track was made** — a panel under every track listing its seed, key, tempo, sections and instruments, and a *How it's made* tab that explains in plain words that the music comes from rules, a seed and synthesis: no AI model, no samples, no existing songs.
 - **Saved and recent tracks, and links** — name a track to keep it, reopen recent ones, or copy a link that opens the exact track. Tracks are stored as settings and a seed, and come back identical.
 
 Tracks avoid sounding like one bar on repeat because they are built in sections (two themes and a quieter break). A theme is a two-bar motif that is stated, answered, contrasted and resolved; each time a section returns it keeps the motif but gets new answering phrases, a different set of instruments and its own drum variations and fills.
+
+## Using the music
+
+The tracks you generate are free to use in any project, personal or commercial. No credit is required, but it is appreciated, for example "Music made with SFX Forge".
+
+## How the music is made
+
+Every track comes from rules written for this project, a random seed and plain synthesis, all running in your browser. There is no AI model, no recording, no sample and no existing song involved, and the same seed with the same settings always gives the same notes. The app has a *How it's made* tab that explains it step by step, and each track has a panel listing its seed, key, tempo, sections and instruments. The techniques behind the sound (FM synthesis, Karplus–Strong strings, Schroeder-style reverb) are long-published and credited there. The program itself was developed with the help of an AI coding assistant, which plays no part when a track is generated.
 
 ## Getting started
 
@@ -141,15 +151,17 @@ Output is normalized to the Volume slider, so every export peaks at the same lev
 src/
 ├─ app/                    Next.js app router shell (layout, page, global styles)
 ├─ components/
-│  ├─ App.tsx              Switches between the two studios
+│  ├─ App.tsx              Switches between the studios and the how-it's-made page
 │  ├─ Studio.tsx           Sound effects: library, transport, sections
+│  ├─ About.tsx            How the music is made, in plain words
 │  ├─ MusicStudio.tsx      Music: style and length options, transport, track details
 │  ├─ ParamSlider.tsx      One labelled slider
 │  └─ Waveform.tsx         Canvas waveform with playhead
 ├─ lib/music/
-│  ├─ styles.ts            The twenty styles, plus scales and chord progressions
+│  ├─ styles.ts            The twenty-eight styles, plus scales and chord progressions
 │  ├─ compose.ts           Writes a piece as timed notes: form, chords, melody, parts
 │  ├─ patches.ts           Instrument definitions
+│  ├─ ambience.ts          Background textures and the worn-tape effect
 │  ├─ render.ts            Plays a score: instruments, drums, echo, reverb, master
 │  ├─ options.ts           Validates stored and shared settings; share links
 │  ├─ midi.ts              Score to standard MIDI file

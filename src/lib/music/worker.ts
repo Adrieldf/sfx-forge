@@ -28,7 +28,7 @@ function formOf(opts: MusicOptions): Form {
 
 const NOTES: Record<ExportKind, string> = {
   stems:
-    "One file per layer, all the same length and starting together.\nPlay them at once to get the full mix, and fade them in and out to change the mood as the game changes.\n\nmix.wav is the finished track. The stems add up to it, less the final limiter, so their sum can peak a little higher.\n",
+    "One file per layer, all the same length and starting together.\nPlay them at once to get the full mix, and fade them in and out to change the mood as the game changes.\n\nmix.wav is the finished track. The stems add up to it, less the final limiter, so their sum can peak a little higher.\nIf the track has rain, crackle or other background texture, that is atmosphere.wav.\n",
   variants:
     "The same track at three intensities. All three are the same length and line up bar for bar,\nso you can crossfade between them at any moment: calm for exploring, intense for a fight.\n",
   introloop:
@@ -43,11 +43,17 @@ function exportFiles(kind: ExportKind, opts: MusicOptions): ZipEntry[] {
     const mix = wav(opts, [0, 1 / (layers.length + 1)]);
     files.push({ name: "mix.wav", data: mix.data });
     layers.forEach((layer, i) => {
-      const solo = { ...opts, layers: Object.fromEntries(Object.keys(ALL_LAYERS).map((k) => [k, k === layer])) as unknown as Layers };
+      const solo = { ...opts, ambience: {}, layers: Object.fromEntries(Object.keys(ALL_LAYERS).map((k) => [k, k === layer])) as unknown as Layers };
       const score = compose(solo);
       if (!score.tracks.length && !score.drums.length) return;
       files.push({ name: `${layer}.wav`, data: wav(solo, [(i + 1) / (layers.length + 1), (i + 2) / (layers.length + 1)], mix.gain).data });
     });
+    // Rain, crackle and the rest go in a file of their own, so the game can mix them separately.
+    const bed = compose(opts).atmos.ambience;
+    if (Object.values(bed).some((v) => v > 0)) {
+      const only = { ...opts, ambience: bed, layers: Object.fromEntries(Object.keys(ALL_LAYERS).map((k) => [k, false])) as unknown as Layers };
+      files.push({ name: "atmosphere.wav", data: wav(only, [layers.length / (layers.length + 1), 1], mix.gain).data });
+    }
   } else if (kind === "variants") {
     const form = formOf(opts);
     const body = (k: string) => k !== "intro" && k !== "outro";

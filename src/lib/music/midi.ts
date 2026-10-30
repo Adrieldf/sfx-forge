@@ -8,6 +8,7 @@ const PROGRAM: Record<PatchId, number> = {
   subBass: 33, sawBass: 38, squareBass: 39, pluckBass: 32,
   epiano: 4, piano: 0, organ: 16, bell: 9, kalimba: 108, musicBox: 10, marimba: 12,
   harp: 46, guitar: 24,
+  feltPiano: 1, tapeKeys: 4, vibes: 11, celesta: 8, ocarina: 79, ukulele: 24, pizz: 45, upright: 32,
 };
 const DRUM_NOTE: Record<DrumKind, number> = {
   kick: 36, snare: 38, clap: 39, rim: 37, hat: 42, ohat: 46, shaker: 70,

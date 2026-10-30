@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import {
   ALL_LAYERS,
   DRUM_CHOICES,
@@ -17,10 +17,11 @@ import {
   type ScoreInfo,
   type SectionKind,
 } from "@/lib/music/compose";
+import { AMBIENCES, AMBIENCE_IDS, type AmbienceId } from "@/lib/music/ambience";
 import { scoreToMidi } from "@/lib/music/midi";
 import { MAX_SECONDS, MAX_SECTIONS, SECTION_KINDS, cleanOptions, decodeShare, encodeShare, formSeconds, sameSong } from "@/lib/music/options";
 import { PATCHES, PATCH_CHOICES } from "@/lib/music/patches";
-import { MAX_BLEND, MODES, STYLES, STYLE_IDS, type ModeId, type StyleId } from "@/lib/music/styles";
+import { MAX_BLEND, MODES, STYLES, defaultAtmos, type ModeId, type StyleId } from "@/lib/music/styles";
 import type { ExportKind, WorkerJob, WorkerReply } from "@/lib/music/worker";
 import { randomSeed } from "@/lib/sfx/params";
 import { SAMPLE_RATE, encodeWav } from "@/lib/sfx/synth";
@@ -45,6 +46,12 @@ const LENGTHS: [number, string][] = [[15, "15s"], [30, "30s"], [60, "1m"], [120,
 const NOTHING = new Float32Array(0);
 const NOTE_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
 const MODE_IDS = Object.keys(MODES) as ModeId[];
+const STYLE_GROUPS: [string, StyleId[]][] = [
+  ["Calm and cosy", ["cozy", "chill", "lofi", "rainy", "campfire", "cafe", "meadow", "seaside", "snowfall", "quietnight", "dreamy", "lullaby"]],
+  ["Lively", ["upbeat", "adventure", "funky", "jazzy", "tropical", "victory"]],
+  ["Fast and tense", ["action", "boss", "racing", "retro", "epic"]],
+  ["Dark and strange", ["mysterious", "sad", "scifi", "stealth", "spooky"]],
+];
 
 /** The band, row by row: the layer, its label, and which instrument choice it carries. */
 const BAND: { layer: keyof Layers; label: string; slot: keyof Instruments }[] = [
@@ -75,7 +82,7 @@ const SECTION_TONE: Record<SectionKind, string> = {
   b: "bg-sig/20 text-sig",
   c: "bg-line text-ink",
 };
-const HEADING = "text-[11px] font-medium tracking-wider text-mute uppercase";
+const HEADING = "text-[13px] font-semibold text-ink";
 const SELECT = "h-7 min-w-0 rounded border border-line bg-panel px-1.5 text-[13px] text-ink outline-none hover:border-faint focus:border-faint disabled:opacity-40";
 const SMALL_BTN = "rounded border border-line px-2 py-0.5 text-xs text-mute transition hover:border-faint hover:text-ink disabled:opacity-40";
 
@@ -157,8 +164,9 @@ function Card({ title, hint, action, children, wide }: { title: string; hint: st
   return (
     <section className={`rounded-lg border border-line bg-panel p-3 ${wide ? "xl:col-span-2" : ""}`}>
       <header className="mb-2 flex items-center gap-2">
-        <h3 className="text-[13px] font-semibold">{title}</h3>
-        <span className="truncate text-xs text-faint">{hint}</span>
+        <h3 className="text-[14px] font-semibold" title={hint}>
+          {title}
+        </h3>
         {action && <span className="ml-auto shrink-0">{action}</span>}
       </header>
       {children}
@@ -166,7 +174,7 @@ function Card({ title, hint, action, children, wide }: { title: string; hint: st
   );
 }
 
-export default function MusicStudio({ active, nav }: { active: boolean; nav: ReactNode }) {
+export default function MusicStudio({ active, nav, onAbout }: { active: boolean; nav: ReactNode; onAbout: () => void }) {
   // Everything the composer is told, in one object: what is here is what the next render uses.
   const [opts, setOpts] = useState<MusicOptions>(initialOptions);
   const [track, setTrack] = useState<TrackData | null>(null);
@@ -359,6 +367,17 @@ export default function MusicStudio({ active, nav }: { active: boolean; nav: Rea
   const setTempo = (bpm: number) => apply(form ? { form: { ...form, bpm } } : { bpm }, true);
   const setMood = (key: keyof Mood, value: number) => apply({ mood: { ...opts.mood, [key]: value || undefined } }, true);
 
+  // ----- atmosphere: background textures and tape -----
+  const atmosDefault = defaultAtmos(styles);
+  const ambience = opts.ambience ?? atmosDefault.ambience;
+  const tape = opts.tape ?? atmosDefault.tape;
+  const setAmbience = (id: AmbienceId, value: number) => {
+    const next = { ...ambience };
+    if (value > 0) next[id] = value;
+    else delete next[id];
+    apply({ ambience: next }, true);
+  };
+
   // ----- band: instruments, levels, re-rolls -----
   const setInstrument = (slot: keyof Instruments, value: string) => apply({ instruments: { ...opts.instruments, [slot]: value || undefined } as Instruments });
   const setLevel = (layer: keyof Layers, value: number) => apply({ levels: { ...opts.levels, [layer]: value === 1 ? undefined : value } }, true);
@@ -526,19 +545,24 @@ export default function MusicStudio({ active, nav }: { active: boolean; nav: Rea
               {styles.length} of {MAX_BLEND} · pick several to blend
             </span>
           </h2>
-          <div className="grid grid-cols-2 gap-1">
-            {STYLE_IDS.map((id) => (
-              <Chip
-                key={id}
-                on={styles.includes(id)}
-                onClick={() => pickStyle(id)}
-                title={!styles.includes(id) && full ? `Up to ${MAX_BLEND} styles — switch one off first` : STYLES[id].blurb}
-                className={`text-left ${!styles.includes(id) && full ? "opacity-40" : ""}`}
-              >
-                {STYLES[id].label}
-              </Chip>
-            ))}
-          </div>
+          {STYLE_GROUPS.map(([group, ids]) => (
+            <div key={group} className="pb-2">
+              <div className="pb-1 text-xs text-faint">{group}</div>
+              <div className="grid grid-cols-2 gap-1">
+                {ids.map((id) => (
+                  <Chip
+                    key={id}
+                    on={styles.includes(id)}
+                    onClick={() => pickStyle(id)}
+                    title={!styles.includes(id) && full ? `Up to ${MAX_BLEND} styles — switch one off first` : STYLES[id].blurb}
+                    className={`text-left ${!styles.includes(id) && full ? "opacity-40" : ""}`}
+                  >
+                    {STYLES[id].label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          ))}
           <p className="pt-2 text-xs leading-snug text-faint">
             {styles.length === 1
               ? `${STYLES[styles[0]].blurb}.`
@@ -681,7 +705,7 @@ export default function MusicStudio({ active, nav }: { active: boolean; nav: Rea
                   : "Plays once: it ends on the home chord and rings out, so it suits jingles, cutscenes and title screens."
                 : decodeShare(window.location.hash)
                   ? "A shared track is loaded. Press Generate to hear it."
-                  : "Every track is composed from scratch — its own key, chords, tune and arrangement — then rendered in your browser.")}
+                  : "Pick a style and press Generate. The track is made in your browser from rules and a random seed; no AI, no samples.")}
           </p>
         </div>
 
@@ -914,6 +938,81 @@ export default function MusicStudio({ active, nav }: { active: boolean; nav: Rea
                   );
                 })}
               </div>
+            </Card>
+
+            <Card
+              title="Atmosphere"
+              hint="background sound and tape"
+              action={
+                (opts.ambience || opts.tape !== undefined) && (
+                  <button type="button" onClick={() => apply({ ambience: undefined, tape: undefined })} title="Go back to what the style comes with" className={SMALL_BTN}>
+                    Reset
+                  </button>
+                )
+              }
+            >
+              <div className="flex flex-col gap-1">
+                {AMBIENCE_IDS.map((id) => {
+                  const value = ambience[id] ?? 0;
+                  return (
+                    <label key={id} className="grid grid-cols-[6.5rem_minmax(0,1fr)_3rem] items-center gap-1.5 text-[13px]" title={AMBIENCES[id].hint}>
+                      <span className="text-mute" onDoubleClick={() => setAmbience(id, 0)}>
+                        {AMBIENCES[id].label}
+                      </span>
+                      <Slider value={value} min={0} max={1} step={0.05} onChange={(v) => setAmbience(id, v)} label={AMBIENCES[id].label} title={AMBIENCES[id].hint} tone="sig" />
+                      <span className={`text-right font-mono text-xs tabular-nums ${value ? "" : "text-faint"}`}>{value ? `${Math.round(value * 100)}%` : "off"}</span>
+                    </label>
+                  );
+                })}
+                <label className="mt-1 grid grid-cols-[6.5rem_minmax(0,1fr)_3rem] items-center gap-1.5 border-t border-line pt-2 text-[13px]" title="Slow pitch drift, rolled-off highs and soft peaks, like an old cassette">
+                  <span className="text-mute" onDoubleClick={() => apply({ tape: 0 }, true)}>
+                    Worn tape
+                  </span>
+                  <Slider value={tape} min={0} max={1} step={0.05} onChange={(v) => apply({ tape: v }, true)} label="Worn tape" />
+                  <span className={`text-right font-mono text-xs tabular-nums ${tape ? "" : "text-faint"}`}>{tape ? `${Math.round(tape * 100)}%` : "off"}</span>
+                </label>
+              </div>
+              <p className="mt-2 text-xs leading-snug text-faint">Textures are generated from noise and tones, not recorded. They loop seamlessly, and come as their own file in the Stems export.</p>
+            </Card>
+
+            <Card
+              wide
+              title="How this track was made"
+              hint="the actual choices behind what you are hearing"
+              action={
+                <button type="button" onClick={onAbout} className={SMALL_BTN}>
+                  How it works
+                </button>
+              }
+            >
+              <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px]">
+                <dt className="text-mute">Seed</dt>
+                <dd className="font-mono">{track.opts.seed >>> 0}</dd>
+                <dt className="text-mute">Style</dt>
+                <dd>{info.recipe || info.style}</dd>
+                <dt className="text-mute">Key and tempo</dt>
+                <dd>
+                  {info.key}, {Math.round(info.bpm)} bpm, {info.bars} bars
+                </dd>
+                <dt className="text-mute">Sections</dt>
+                <dd>{info.sections.map((x) => `${x.label} (${x.bars})`).join(" · ")}</dd>
+                {BAND.map(({ layer, label }) => (
+                  <Fragment key={layer}>
+                    <dt className="text-mute">{label}</dt>
+                    <dd>{info.instruments[layer].length ? info.instruments[layer].join(", ") : "off"}</dd>
+                  </Fragment>
+                ))}
+                <dt className="text-mute">Background</dt>
+                <dd>
+                  {(() => {
+                    const on = AMBIENCE_IDS.filter((id) => (ambience[id] ?? 0) > 0).map((id) => AMBIENCES[id].label.toLowerCase());
+                    return [...on, tape ? "worn tape" : ""].filter(Boolean).join(", ") || "none";
+                  })()}
+                </dd>
+              </dl>
+              <p className="mt-2 border-t border-line pt-2 text-xs leading-snug text-mute">
+                Made by rules written for this project, with these numbers choosing between them. There is no AI model, and no recording or existing song is used. Press Generate with the same seed and settings, or open the share link, and you get the same notes. Free to use in any project, commercial or not; credit is not needed but appreciated.
+              </p>
             </Card>
 
             <Card wide title="Export" hint="more than the plain WAV, packaged for a game">

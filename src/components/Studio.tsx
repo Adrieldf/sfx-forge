@@ -497,7 +497,7 @@ export default function Studio({ active, nav }: { active: boolean; nav: ReactNod
                 if (!items.length) return null;
                 return (
                   <section key={cat}>
-                    <h2 className="pt-3 pb-1.5 text-[11px] font-medium tracking-wider text-mute uppercase">{cat}</h2>
+                    <h2 className="pt-3 pb-1.5 text-[13px] font-semibold text-ink">{cat}</h2>
                     <div className="grid grid-cols-2 gap-1">{items.map(presetButton)}</div>
                   </section>
                 );

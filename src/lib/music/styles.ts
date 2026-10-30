@@ -1,3 +1,4 @@
+import type { AmbienceId } from "./ambience";
 import type { PatchId } from "./patches";
 
 export type ModeId = "major" | "lydian" | "mixolydian" | "minor" | "dorian" | "phrygian" | "harmonic";
@@ -76,6 +77,8 @@ export interface StyleDef {
   pump: number;
   /** Timing looseness in seconds. */
   human: number;
+  /** The texture and tape the style comes with, unless the options say otherwise. */
+  atmos?: { tape?: number; ambience?: Partial<Record<AmbienceId, number>> };
 }
 
 const styles = {
@@ -339,6 +342,118 @@ const styles = {
     drums: ["none"], drumTone: 5000, drumLevel: 0.4,
     reverb: { size: 0.7, mix: 0.32 }, delay: { steps: 3, mix: 0.18 }, pump: 0, human: 0.012,
   },
+  lofi: {
+    label: "Lo-fi",
+    blurb: "Dusty keys, loose drums and worn tape — studying, crafting, menus",
+    bpm: [68, 84], swing8: 0, swing16: 0.3,
+    modes: ["dorian", "minor", "major", "dorian"], sevenths: 0.95, hr: [1, 2],
+    lead: ["tapeKeys", "feltPiano", "vibes", "softLead"], lead2: ["vibes", "kalimba", "tapeKeys"], leadCentre: 70,
+    pentatonic: true, density: 0.4, sixteenths: 0.1, gate: 0.85,
+    chords: [["tapeKeys", "comp"], ["feltPiano", "broken"], ["tapeKeys", "broken"]],
+    bass: [["upright", "synco"], ["subBass", "synco"], ["subBass", "root"]],
+    arp: ["vibes", "kalimba"], arpRate: [2, 3], arpChance: 0.25,
+    drums: ["lofi"], drumTone: 4200, drumLevel: 0.85,
+    reverb: { size: 0.5, mix: 0.2 }, delay: { steps: 3, mix: 0.2 }, pump: 0.15, human: 0.014,
+    atmos: { tape: 0.55, ambience: { crackle: 0.4 } },
+  },
+  rainy: {
+    label: "Rainy day",
+    blurb: "Slow felt piano with rain on the window — quiet rooms, reading, rest",
+    bpm: [58, 74], swing8: 0, swing16: 0,
+    modes: ["minor", "dorian", "major"], sevenths: 0.7, hr: [2, 1],
+    lead: ["feltPiano", "celesta", "softLead"], lead2: ["feltPiano", "musicBox", "vibes"], leadCentre: 72,
+    pentatonic: true, density: 0.3, sixteenths: 0, gate: 1,
+    chords: [["feltPiano", "broken"], ["warmPad", "sustain"], ["feltPiano", "comp"]],
+    bass: [["subBass", "long"], ["upright", "root"]],
+    arp: ["feltPiano", "celesta"], arpRate: [2, 3], arpChance: 0.4,
+    drums: ["none", "none", "brush"], drumTone: 4500, drumLevel: 0.5,
+    reverb: { size: 0.75, mix: 0.3 }, delay: { steps: 3, mix: 0.2 }, pump: 0, human: 0.012,
+    atmos: { tape: 0.2, ambience: { rain: 0.6 } },
+  },
+  campfire: {
+    label: "Campfire",
+    blurb: "Strummed guitar and hand drums by the fire — camps, journeys, evenings",
+    bpm: [76, 96], swing8: 0.3, swing16: 0,
+    modes: ["major", "mixolydian", "dorian"], sevenths: 0.35, hr: [1, 2],
+    lead: ["ocarina", "guitar", "kalimba"], lead2: ["guitar", "ocarina", "softLead"], leadCentre: 72,
+    pentatonic: true, density: 0.4, sixteenths: 0, gate: 0.9,
+    chords: [["guitar", "strum"], ["ukulele", "strum"], ["guitar", "broken"]],
+    bass: [["upright", "root"], ["subBass", "root"]],
+    arp: ["guitar", "harp"], arpRate: [2], arpChance: 0.3,
+    drums: ["hand", "none"], drumTone: 6500, drumLevel: 0.6,
+    reverb: { size: 0.5, mix: 0.2 }, delay: { steps: 3, mix: 0.12 }, pump: 0, human: 0.012,
+    atmos: { ambience: { fire: 0.55, night: 0.25 } },
+  },
+  cafe: {
+    label: "Café",
+    blurb: "Soft jazz trio with brushes and a walking bass — shops, inns, hubs",
+    bpm: [88, 108], swing8: 0.45, swing16: 0,
+    modes: ["major", "dorian", "mixolydian"], sevenths: 0.95, hr: [1, 1, 2],
+    lead: ["feltPiano", "vibes", "guitar"], lead2: ["vibes", "feltPiano", "softLead"], leadCentre: 72,
+    pentatonic: false, density: 0.5, sixteenths: 0.05, gate: 0.85,
+    chords: [["feltPiano", "comp"], ["guitar", "comp"], ["feltPiano", "broken"]],
+    bass: [["upright", "walk"]],
+    arp: ["vibes", "pizz"], arpRate: [2], arpChance: 0.2,
+    drums: ["brush"], drumTone: 7000, drumLevel: 0.65,
+    reverb: { size: 0.4, mix: 0.16 }, delay: { steps: 3, mix: 0.1 }, pump: 0, human: 0.01,
+    atmos: { tape: 0.1 },
+  },
+  meadow: {
+    label: "Meadow",
+    blurb: "Light and sunny, with a whistling tune — farms, fields, morning chores",
+    bpm: [92, 110], swing8: 0.2, swing16: 0,
+    modes: ["major", "major", "lydian", "mixolydian"], sevenths: 0.2, hr: [1, 2],
+    lead: ["ocarina", "kalimba", "marimba", "ukulele"], lead2: ["kalimba", "ocarina", "celesta"], leadCentre: 76,
+    pentatonic: true, density: 0.55, sixteenths: 0.05, gate: 0.85,
+    chords: [["ukulele", "strum"], ["guitar", "strum"], ["marimba", "comp"]],
+    bass: [["upright", "root"], ["pluckBass", "walk"]],
+    arp: ["kalimba", "pizz", "marimba"], arpRate: [2], arpChance: 0.3,
+    drums: ["hand", "brush"], drumTone: 8000, drumLevel: 0.6,
+    reverb: { size: 0.45, mix: 0.16 }, delay: { steps: 3, mix: 0.1 }, pump: 0, human: 0.008,
+    atmos: { ambience: { birds: 0.5, wind: 0.15 } },
+  },
+  snowfall: {
+    label: "Snowfall",
+    blurb: "Sparse bells and glassy pads in cold air — winter towns, ice, calm",
+    bpm: [56, 72], swing8: 0, swing16: 0,
+    modes: ["lydian", "major", "minor"], sevenths: 0.6, hr: [2],
+    lead: ["celesta", "musicBox", "vibes", "bell"], lead2: ["celesta", "feltPiano", "harp"], leadCentre: 79,
+    pentatonic: true, density: 0.3, sixteenths: 0, gate: 1,
+    chords: [["glassPad", "sustain"], ["feltPiano", "broken"], ["warmPad", "sustain"]],
+    bass: [["subBass", "long"]],
+    arp: ["celesta", "harp", "musicBox"], arpRate: [2, 3], arpChance: 0.6,
+    drums: ["none"], drumTone: 4500, drumLevel: 0.4,
+    reverb: { size: 0.85, mix: 0.36 }, delay: { steps: 4, mix: 0.25 }, pump: 0, human: 0.008,
+    atmos: { ambience: { wind: 0.3 } },
+  },
+  seaside: {
+    label: "Seaside",
+    blurb: "Warm vibraphone and nylon guitar by the shore — harbours, beaches, sunsets",
+    bpm: [80, 98], swing8: 0.25, swing16: 0,
+    modes: ["lydian", "major", "mixolydian"], sevenths: 0.6, hr: [1, 2],
+    lead: ["vibes", "ocarina", "guitar", "feltPiano"], lead2: ["vibes", "softLead", "harp"], leadCentre: 74,
+    pentatonic: true, density: 0.45, sixteenths: 0.05, gate: 0.9,
+    chords: [["guitar", "strum"], ["feltPiano", "comp"], ["warmPad", "sustain"]],
+    bass: [["upright", "root"], ["subBass", "synco"]],
+    arp: ["harp", "vibes"], arpRate: [2], arpChance: 0.35,
+    drums: ["hand", "brush"], drumTone: 7000, drumLevel: 0.6,
+    reverb: { size: 0.6, mix: 0.24 }, delay: { steps: 3, mix: 0.15 }, pump: 0, human: 0.01,
+    atmos: { ambience: { waves: 0.5, birds: 0.1 } },
+  },
+  quietnight: {
+    label: "Quiet night",
+    blurb: "Soft keys under the stars with crickets outside — camps, inns, bedtime",
+    bpm: [58, 72], swing8: 0, swing16: 0,
+    modes: ["major", "lydian", "dorian"], sevenths: 0.5, hr: [2, 1],
+    lead: ["feltPiano", "musicBox", "ocarina"], lead2: ["celesta", "feltPiano", "harp"], leadCentre: 74,
+    pentatonic: true, density: 0.3, sixteenths: 0, gate: 1,
+    chords: [["warmPad", "sustain"], ["feltPiano", "broken"], ["harp", "broken"]],
+    bass: [["subBass", "long"]],
+    arp: ["celesta", "harp"], arpRate: [2, 3], arpChance: 0.5,
+    drums: ["none"], drumTone: 4500, drumLevel: 0.4,
+    reverb: { size: 0.8, mix: 0.32 }, delay: { steps: 3, mix: 0.2 }, pump: 0, human: 0.01,
+    atmos: { ambience: { night: 0.5, wind: 0.1 } },
+  },
 } satisfies Record<string, StyleDef>;
 
 export type StyleId = keyof typeof styles;
@@ -398,4 +513,19 @@ export function blendStyles(ids: StyleId[], rnd: () => number): { style: StyleDe
       human: mean((s) => s.human),
     },
   };
+}
+
+/**
+ * The texture and tape a set of styles brings with it. For a blend, each texture is as loud as
+ * the loudest style wants it and the tape is the strongest.
+ */
+export function defaultAtmos(ids: StyleId[]): { tape: number; ambience: Partial<Record<AmbienceId, number>> } {
+  const out: { tape: number; ambience: Partial<Record<AmbienceId, number>> } = { tape: 0, ambience: {} };
+  for (const id of new Set(ids)) {
+    const a = STYLES[id].atmos;
+    if (!a) continue;
+    out.tape = Math.max(out.tape, a.tape ?? 0);
+    for (const [k, v] of Object.entries(a.ambience ?? {})) out.ambience[k as AmbienceId] = Math.max(out.ambience[k as AmbienceId] ?? 0, v);
+  }
+  return out;
 }

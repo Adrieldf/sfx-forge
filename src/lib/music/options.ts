@@ -1,4 +1,5 @@
 import { ALL_LAYERS, DRUM_CHOICES, MAX_SECTION_BARS, MIN_SECTION_BARS, SECTION_LABELS, type Form, type Layers, type MusicOptions, type SectionKind } from "./compose";
+import { AMBIENCE_IDS, type AmbienceId } from "./ambience";
 import { PATCH_CHOICES } from "./patches";
 import { MAX_BLEND, MODES, STYLES, type ModeId, type StyleId } from "./styles";
 
@@ -53,6 +54,11 @@ export function cleanOptions(raw: unknown): MusicOptions | null {
   const layers = record(r.layers);
   const inst = record(r.instruments);
   const mood = record(r.mood);
+  // An ambience object, even an empty one, replaces the style's own: it is how "none" is saved.
+  const amb = record(r.ambience);
+  const ambience = r.ambience && typeof r.ambience === "object" && !Array.isArray(r.ambience)
+    ? (Object.fromEntries(AMBIENCE_IDS.flatMap((id) => { const v = num(amb[id], 0.05, 1); return v === undefined ? [] : [[id, v]]; })) as Partial<Record<AmbienceId, number>>)
+    : undefined;
 
   return {
     styles,
@@ -73,6 +79,8 @@ export function cleanOptions(raw: unknown): MusicOptions | null {
     }),
     levels: perLayer(r.levels, 0, 2, false),
     rerolls: perLayer(r.rerolls, 1, 0xffffffff, true),
+    ambience,
+    tape: num(r.tape, 0, 1),
     mood: compact({ bright: num(mood.bright, -1, 1), busy: num(mood.busy, -1, 1), space: num(mood.space, -1, 1) }),
   };
 }

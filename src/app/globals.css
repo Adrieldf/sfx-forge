@@ -1,17 +1,21 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg: #101113;
-  --color-panel: #17191c;
-  --color-raise: #1f2226;
-  --color-line: #2a2e34;
-  --color-ink: #ecebe7;
-  --color-mute: #8a8f98;
-  --color-faint: #5d626b;
-  --color-amp: #f2a33a;
-  --color-sig: #5fd4b8;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: #141413;
+  --color-panel: #1b1b19;
+  --color-raise: #252523;
+  --color-line: #34332f;
+  --color-ink: #e9e6dd;
+  --color-mute: #99958a;
+  --color-faint: #67645b;
+  --color-amp: #e8a24a;
+  --color-sig: #6fc3ad;
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  /* Corners stay nearly square: it is a tool, not a card deck. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
 }
 
 html {
