@@ -22,7 +22,9 @@ import {
 import { MATERIALS, MATERIAL_IDS, materialLabel, type Material } from "@/lib/sfx/materials";
 import { MELODY_PATTERNS, cleanMelody } from "@/lib/sfx/melody";
 import { CATEGORIES, PRESETS, type Preset, type PresetStyle } from "@/lib/sfx/presets";
-import { SAMPLE_RATE, encodeWav, render } from "@/lib/sfx/synth";
+import { SAMPLE_RATE, render } from "@/lib/sfx/synth";
+import { FORMATS, encodeAudio } from "@/lib/encode";
+import FormatPicker, { useAudioFormat } from "./FormatPicker";
 import ParamSlider from "./ParamSlider";
 import Waveform from "./Waveform";
 
@@ -320,11 +322,19 @@ export default function Studio({ active, nav }: { active: boolean; nav: ReactNod
   const title = state.edited ? `${state.name} (edited)` : state.name;
   const fileName = state.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "sound";
 
-  const downloadWav = () => {
-    const url = URL.createObjectURL(encodeWav(samples));
+  const [format, setFormat] = useAudioFormat();
+  const download = async () => {
+    let bytes: Uint8Array<ArrayBuffer>;
+    try {
+      bytes = await encodeAudio(format, samples);
+    } catch {
+      flash(`Could not make the ${FORMATS[format].label} file`);
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([bytes], { type: FORMATS[format].mime }));
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${fileName}.wav`;
+    a.download = `${fileName}.${format}`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -601,8 +611,9 @@ export default function Studio({ active, nav }: { active: boolean; nav: ReactNod
               >
                 Copy link
               </Btn>
-              <Btn primary onClick={downloadWav} title="16-bit mono WAV, 44.1 kHz">
-                Download WAV
+              <FormatPicker value={format} onChange={setFormat} />
+              <Btn primary onClick={download} title={`Mono, 44.1 kHz. ${FORMATS[format].hint}`}>
+                Download {FORMATS[format].label}
               </Btn>
             </div>
           </div>

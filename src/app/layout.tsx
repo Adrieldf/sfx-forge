@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SFX Forge — game sound effect and music generator",
-  description: "Design sound effects and generate background music for games in the browser. Presets, sliders, WAV export.",
+  description: "Design sound effects and generate background music for games in the browser. Presets, sliders, WAV, OGG and MP3 export.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

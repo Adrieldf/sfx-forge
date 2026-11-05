@@ -616,19 +616,26 @@ export function compose(o: MusicOptions): Score {
       tracks.set(key, tr);
     }
     const t = Math.max(0, at(step) + offset + jitter());
-    tr.notes.push({ t, d: Math.max(0.03, (at(step + len) - at(step)) * gate), midi: midi + shift, vel: Math.min(1, vel) });
+    let pitch = midi + shift;
+    while (pitch > (PATCHES[patch].top ?? 127)) pitch -= 12;
+    tr.notes.push({ t, d: Math.max(0.03, (at(step + len) - at(step)) * gate), midi: pitch, vel: Math.min(1, vel) });
   };
   const hit = (kind: DrumKind, step: number, vel: number) => {
     drums.push({ kind, t: Math.max(0, at(step) + jitter() * 0.5), vel: Math.min(1, vel) });
   };
 
+  /** The tune's pitch at each sixteenth it sounds, so the arpeggio can keep out of its way. */
+  const tuneAt: number[] = [];
   /** Plays a motif over the chords, starting from a rung of the melody scale. Returns the last pitch. */
   let lastPitch = st.leadCentre;
   const sing = (role: Role, patch: PatchId, m: Motif, step0: number, start: number, loud: number, double: boolean) => {
     let idx = start;
+    // Bells and mallets turn back lower, before they get shrill.
+    const top = PATCHES[patch].top;
+    const ceiling = top ? Math.max(centre, Math.min(hi, rung(top - shift - 3))) : hi;
     m.hits.forEach((h, k) => {
       idx += m.deltas[k];
-      if (idx > hi) idx = 2 * hi - idx;
+      if (idx > ceiling) idx = 2 * ceiling - idx;
       if (idx < lo) idx = 2 * lo - idx;
       const c = chordAt(step0 + h.s);
       const last = k === m.hits.length - 1;
@@ -641,6 +648,7 @@ export function compose(o: MusicOptions): Score {
       const vel = (0.7 + (h.s % 8 === 0 ? 0.1 : 0) + rnd() * 0.1) * loud;
       note(role, patch, step0 + h.s, h.d, p, vel, st.gate);
       if (double) note(role, patch, step0 + h.s, h.d, p - 12, vel * 0.55, st.gate);
+      for (let k = 0; k < h.d; k++) tuneAt[step0 + h.s + k] = p;
       lastPitch = p;
     });
   };
@@ -699,14 +707,34 @@ export function compose(o: MusicOptions): Score {
     }
   };
 
+  /**
+   * The arpeggio sparkles above everything only when nothing is sung. Under the tune it drops
+   * below it, since the ear takes the highest line for the melody, and it leaves out any note
+   * that would rub a semitone against the tune.
+   */
   const writeArp = (sec: Section, mat: Material) => {
     draw("arp", sectionKey);
-    const end = (sec.bar0 + sec.bars) * 16;
     const loud = 0.75 + 0.25 * sec.energy;
-    for (let s = sec.bar0 * 16, n = 0; s < end; s += mat.arpRate, n++) {
-      const v = chordAt(s).voicing;
-      const pool = [v[0], v[1], v[2], v[3] ?? v[0] + 12, v[0] + 12 + (v.length > 3 ? 0 : v[1] - v[0])];
-      note("arp", mat.arp, s, mat.arpRate, pool[mat.arpShape[n % mat.arpShape.length]] + 12, (s % 4 === 0 ? 0.78 : 0.55) * loud + rnd() * 0.08);
+    // Every bar starts the figure again on the beat; a rate that does not divide the bar falls into 3+3+2.
+    const grid = mat.arpRate === 3 ? [0, 3, 6, 8, 11, 14] : Array.from({ length: Math.ceil(16 / mat.arpRate) }, (_, i) => i * mat.arpRate);
+    for (let j = 0; j < sec.bars; j++) {
+      grid.forEach((x, n) => {
+        const s = (sec.bar0 + j) * 16 + x;
+        const len = (grid[n + 1] ?? 16) - x;
+        const vel = (x % 4 === 0 ? 0.78 : 0.55) * loud + rnd() * 0.08;
+        const v = chordAt(s).voicing;
+        const pool = [v[0], v[1], v[2], v[3] ?? v[0] + 12, v[0] + 12 + (v.length > 3 ? 0 : v[1] - v[0])];
+        const k = mat.arpShape[n % mat.arpShape.length];
+        const tune = tuneAt.slice(s, s + len).filter((t) => t !== undefined);
+        if (!tune.length) return note("arp", mat.arp, s, len, pool[k] + 12, vel);
+        // The figure's own note if it fits under the tune, else the nearest chord note that does.
+        const fits = [k, ...[1, 2, 3, 4].flatMap((d) => [k - d, k + d])].filter((i) => i >= 0 && i < pool.length).map((i) => {
+          let p = pool[i] + 12;
+          while (p > Math.min(...tune) - 3) p -= 12;
+          return p;
+        }).find((p) => p >= CHORD_LOW + 3 && !tune.some((t) => [1, 11].includes((((p - t) % 12) + 12) % 12)));
+        if (fits !== undefined) note("arp", mat.arp, s, len, fits, vel);
+      });
     }
   };
 

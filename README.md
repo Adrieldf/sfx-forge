@@ -2,14 +2,14 @@
 
 <p align="center">
   <strong>Design sound effects for games and interfaces, right in the browser.</strong><br>
-  354 presets · 40+ sliders · 15 physical materials · a note sequencer · WAV export
+  354 presets · 40+ sliders · 15 physical materials · a note sequencer · WAV, OGG and MP3 export
 </p>
 
 <p align="center">
   <img src="docs/screenshots/overview.png" alt="SFX Forge showing the Quest complete preset: preset library on the left, waveform and transport on top, and the slider sections below" width="100%">
 </p>
 
-Every sound is synthesized from scratch on your machine. There are no samples, no audio libraries and no server: pick a preset, drag sliders until it sounds right, and download a WAV.
+Every sound is synthesized from scratch on your machine. There are no samples, no audio libraries and no server: pick a preset, drag sliders until it sounds right, and download a WAV, OGG or MP3.
 
 ## Features
 
@@ -21,7 +21,7 @@ Every sound is synthesized from scratch on your machine. There are no samples, n
 - **Mutate and Randomize** — nudge the current sound for near-variants, or roll a new one. Every section also has its own dice and reset buttons.
 - **Materials** — run any sound through wood, stone, metal, glass, grass, gravel, water and more.
 - **Sequencer** — turn one sound into a jingle with a short text score such as `0 4 7 12`.
-- **Export and share** — 16-bit WAV, copy/paste as JSON, or a link that reopens the exact sound.
+- **Export and share** — 16-bit WAV, Ogg Vorbis or MP3, copy/paste as JSON, or a link that reopens the exact sound.
 - **My sounds** — a named collection saved in your browser.
 - **Undo/redo and autoplay**, with keyboard shortcuts for the things you do most.
 - **Music** — a second tab that composes whole background tracks in twenty-eight styles, from 15 seconds to 3 minutes, as seamless loops or one-off pieces.
@@ -82,7 +82,7 @@ The **Music** tab writes a new piece every time: pick a style and a length, and 
 - **Atmosphere** — background textures (rain, vinyl crackle, fireplace, wind, crickets, waves, birdsong) and a worn-tape effect (pitch drift, rolled-off highs, soft clipping). The calm styles come with a fitting one switched on; every level is yours to change. Textures are generated from noise and tones, loop seamlessly, and come as their own file in the Stems export.
 - **Arrangement** — reorder the sections by dragging, change what each one is (intro, theme A, theme B, break, outro), make it longer or shorter two bars at a time, set how full it sounds, and add or remove sections. The themes stay the same tunes wherever you put them.
 - **Key changes and section looping** — each section can be played a few semitones higher or lower, and auditioned on repeat while you edit.
-- **Exports for games** — besides the stereo WAV:
+- **Exports for games** — besides the stereo track (WAV, OGG or MP3, and every zip below comes in the same format):
   - **Stems** — one file per layer plus the mix; the stems add up to the mix exactly, before the final limiter.
   - **Intensity set** — calm, normal and intense versions that line up bar for bar, for crossfading as the action changes.
   - **Intro + loop** — a file to play once, then a file to repeat, joining without a gap.
@@ -133,7 +133,7 @@ Double-click a slider's name to reset it.
 
 ## How a sound is built
 
-Each sound is rendered offline to a 44.1 kHz buffer, then played through Web Audio or encoded as WAV.
+Each sound is rendered offline to a 44.1 kHz buffer, then played through Web Audio or encoded as WAV, or as Ogg Vorbis and MP3 with libvorbis and LAME compiled to WebAssembly ([wasm-media-encoders](https://github.com/arseneyr/wasm-media-encoders), loaded only when first used).
 
 ```
 Oscillator ─► Pitch motion ─► Envelope ─► Sequence ─► Material ─► Filter ─► Grit ─► Space ─► Normalize
@@ -155,8 +155,10 @@ src/
 │  ├─ Studio.tsx           Sound effects: library, transport, sections
 │  ├─ About.tsx            How the music is made, in plain words
 │  ├─ MusicStudio.tsx      Music: style and length options, transport, track details
+│  ├─ FormatPicker.tsx     WAV / OGG / MP3 choice, shared by both studios
 │  ├─ ParamSlider.tsx      One labelled slider
 │  └─ Waveform.tsx         Canvas waveform with playhead
+├─ lib/encode.ts           WAV, Ogg Vorbis and MP3 encoding
 ├─ lib/music/
 │  ├─ styles.ts            The twenty-eight styles, plus scales and chord progressions
 │  ├─ compose.ts           Writes a piece as timed notes: form, chords, melody, parts

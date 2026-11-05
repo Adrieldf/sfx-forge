@@ -10,6 +10,8 @@
 interface Base {
   name: string;
   level: number;
+  /** Highest note it plays; the tune turns back below it and stray notes drop an octave. Bells and mallets go shrill above it. */
+  top?: number;
 }
 
 export interface SubPatch extends Base {
@@ -90,22 +92,22 @@ const patches = {
   pluckBass: { kind: "sub", name: "Plucked bass", level: 0.85, wave: "saw", a: 0.004, d: 0.3, s: 0.3, r: 0.1, cut: 300, track: 0.6, env: 1.8, fd: 0.09, q: 0.9, sub: 0.4 },
   // keys and mallets
   epiano: { kind: "fm", name: "Electric piano", level: 0.5, ratio: 1, index: 1.6, idecay: 0.35, isus: 0.25, ratio2: 14, index2: 0.5, a: 0.004, d: 1.3, s: 0.15, r: 0.2, spread: 3 },
-  bell: { kind: "fm", name: "Bells", level: 0.55, ratio: 3.5, index: 2.2, idecay: 0.5, isus: 0.15, a: 0.002, d: 0.9, s: 0, r: 0.5, spread: 4 },
-  kalimba: { kind: "fm", name: "Kalimba", level: 0.85, ratio: 6.3, index: 1, idecay: 0.06, isus: 0.05, a: 0.002, d: 0.35, s: 0, r: 0.25, spread: 2 },
-  musicBox: { kind: "fm", name: "Music box", level: 0.65, ratio: 4, index: 1.2, idecay: 0.15, isus: 0.1, a: 0.002, d: 0.7, s: 0, r: 0.5, spread: 5 },
+  bell: { kind: "fm", name: "Bells", level: 0.5, top: 84, ratio: 3.5, index: 1.4, idecay: 0.35, isus: 0.08, a: 0.004, d: 0.9, s: 0, r: 0.5, spread: 4 },
+  kalimba: { kind: "fm", name: "Kalimba", level: 0.75, top: 84, ratio: 6.3, index: 0.6, idecay: 0.06, isus: 0.05, a: 0.002, d: 0.35, s: 0, r: 0.25, spread: 2 },
+  musicBox: { kind: "fm", name: "Music box", level: 0.6, top: 86, ratio: 4, index: 0.9, idecay: 0.15, isus: 0.08, a: 0.004, d: 0.7, s: 0, r: 0.5, spread: 5 },
   piano: { kind: "fm", name: "Piano", level: 0.6, ratio: 1, index: 2.4, idecay: 0.12, isus: 0.14, ratio2: 7, index2: 0.35, a: 0.002, d: 1.1, s: 0.04, r: 0.25, spread: 2 },
   organ: { kind: "fm", name: "Organ", level: 0.45, ratio: 2, index: 0.7, idecay: 1, isus: 1, ratio2: 4, index2: 0.4, a: 0.008, d: 1, s: 1, r: 0.06, spread: 5 },
-  marimba: { kind: "fm", name: "Marimba", level: 0.8, ratio: 4, index: 0.9, idecay: 0.04, isus: 0.03, a: 0.002, d: 0.28, s: 0, r: 0.2, spread: 2 },
+  marimba: { kind: "fm", name: "Marimba", level: 0.8, top: 84, ratio: 4, index: 0.7, idecay: 0.04, isus: 0.03, a: 0.002, d: 0.28, s: 0, r: 0.2, spread: 2 },
   feltPiano: { kind: "fm", name: "Felt piano", level: 0.7, ratio: 1, index: 0.9, idecay: 0.25, isus: 0.08, a: 0.006, d: 1.6, s: 0.04, r: 0.4, spread: 3 },
   tapeKeys: { kind: "fm", name: "Tape keys", level: 0.55, ratio: 1, index: 1.1, idecay: 0.5, isus: 0.3, ratio2: 2, index2: 0.25, a: 0.005, d: 1.5, s: 0.2, r: 0.3, spread: 9 },
-  vibes: { kind: "fm", name: "Vibraphone", level: 0.7, ratio: 4, index: 0.45, idecay: 0.25, isus: 0.2, a: 0.003, d: 1.9, s: 0, r: 0.7, spread: 7 },
-  celesta: { kind: "fm", name: "Celesta", level: 0.6, ratio: 5, index: 0.7, idecay: 0.12, isus: 0.08, a: 0.002, d: 1.3, s: 0, r: 0.7, spread: 4 },
+  vibes: { kind: "fm", name: "Vibraphone", level: 0.7, top: 84, ratio: 4, index: 0.45, idecay: 0.25, isus: 0.2, a: 0.003, d: 1.9, s: 0, r: 0.7, spread: 7 },
+  celesta: { kind: "fm", name: "Celesta", level: 0.55, top: 86, ratio: 5, index: 0.55, idecay: 0.12, isus: 0.06, a: 0.004, d: 1.3, s: 0, r: 0.7, spread: 4 },
   ocarina: { kind: "sub", name: "Ocarina", level: 0.65, wave: "tri", a: 0.07, d: 0.25, s: 0.85, r: 0.2, cut: 1600, track: 0.5, q: 0.7, vib: 0.22, vibRate: 5, vibDelay: 0.3 },
   // strings
   ukulele: { kind: "pluck", name: "Ukulele", level: 1.5, bright: 0.6, ring: 0.9 },
   pizz: { kind: "pluck", name: "Pizzicato", level: 1.4, bright: 0.3, ring: 0.7 },
   upright: { kind: "pluck", name: "Upright bass", level: 1.8, bright: 0.18, ring: 1 },
-  harp: { kind: "pluck", name: "Harp", level: 0.7, bright: 0.75, ring: 2.5 },
+  harp: { kind: "pluck", name: "Harp", level: 0.7, top: 86, bright: 0.6, ring: 2.5 },
   guitar: { kind: "pluck", name: "Nylon guitar", level: 1.5, bright: 0.45, ring: 1.8 },
 } satisfies Record<string, Patch>;
 

@@ -21,10 +21,13 @@ import { AMBIENCES, AMBIENCE_IDS, type AmbienceId } from "@/lib/music/ambience";
 import { scoreToMidi } from "@/lib/music/midi";
 import { MAX_SECONDS, MAX_SECTIONS, SECTION_KINDS, cleanOptions, decodeShare, encodeShare, formSeconds, sameSong } from "@/lib/music/options";
 import { PATCHES, PATCH_CHOICES } from "@/lib/music/patches";
+import { PRESETS, PRESET_GROUPS, matchPreset, presetOptions, type PresetId } from "@/lib/music/presets";
 import { MAX_BLEND, MODES, STYLES, defaultAtmos, type ModeId, type StyleId } from "@/lib/music/styles";
 import type { ExportKind, WorkerJob, WorkerReply } from "@/lib/music/worker";
 import { randomSeed } from "@/lib/sfx/params";
-import { SAMPLE_RATE, encodeWav } from "@/lib/sfx/synth";
+import { SAMPLE_RATE } from "@/lib/sfx/synth";
+import { FORMATS } from "@/lib/encode";
+import FormatPicker, { useAudioFormat } from "./FormatPicker";
 import Waveform from "./Waveform";
 
 interface TrackData {
@@ -67,7 +70,7 @@ const MOODS: { key: keyof Mood; label: string; hint: string }[] = [
   { key: "space", label: "Space", hint: "Left is dry and close, right is washed in reverb and echo." },
 ];
 const EXPORTS: { kind: ExportKind; label: string; hint: string }[] = [
-  { kind: "stems", label: "Stems", hint: "One WAV per layer plus the full mix, so the game can fade layers in and out" },
+  { kind: "stems", label: "Stems", hint: "One file per layer plus the full mix, so the game can fade layers in and out" },
   { kind: "variants", label: "Intensity set", hint: "Calm, normal and intense versions that line up bar for bar" },
   { kind: "introloop", label: "Intro + loop", hint: "A file to play once, then a file to repeat, joining without a gap" },
   { kind: "stingers", label: "Stingers", hint: "Victory, defeat and level-up jingles in this track's key and instruments" },
@@ -353,6 +356,9 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
     // Another style has another tempo, so the arrangement is planned afresh.
     generateNew({ styles: next, form: undefined });
   };
+  /** A preset sets the styles, tempo, scale, band and texture in one go, then rolls a new song. */
+  const pickPreset = (id: PresetId) => generateNew(presetOptions(id, Math.random));
+  const preset = matchPreset(opts);
   const toggleLayer = (key: keyof Layers) => {
     const next = { ...layers, [key]: !layers[key] };
     if (Object.values(next).some(Boolean)) apply({ layers: next });
@@ -455,9 +461,11 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
     }
   };
 
-  const exportZip = (kind: ExportKind, label: string) => {
-    if (!track || exporting) return;
-    const of = track;
+  const [format, setFormat] = useAudioFormat();
+
+  /** Runs an export in a worker, which renders or encodes it without stalling the page, and saves what comes back. */
+  const runExport = (job: WorkerJob, label: string, name: string, mime: string) => {
+    if (exporting) return;
     const worker = new Worker(new URL("../lib/music/worker.ts", import.meta.url));
     exportRef.current = worker;
     setExporting({ label, fraction: 0 });
@@ -469,15 +477,28 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
     worker.onmessage = (e: MessageEvent<WorkerReply>) => {
       if (e.data.type === "progress") setExporting({ label, fraction: e.data.fraction });
       else if (e.data.type === "file") {
-        saveFile(new Blob([e.data.bytes], { type: "application/zip" }), `${fileBase(of)}-${e.data.suffix}.zip`);
+        saveFile(new Blob([e.data.bytes], { type: mime }), name);
         finish();
-      }
+      } else if (e.data.type === "error") fail();
     };
-    worker.onerror = () => {
+    const fail = () => {
       finish();
-      flash(`Could not export the ${label.toLowerCase()}.`);
+      flash(`Could not export the ${label}.`);
     };
-    worker.postMessage({ job: kind, opts: of.opts } satisfies WorkerJob);
+    worker.onerror = fail;
+    const transfer = job.job === "encode" ? [job.left.buffer, job.right.buffer] : [];
+    worker.postMessage(job, transfer);
+  };
+
+  const exportZip = (kind: ExportKind, label: string) => {
+    if (track) runExport({ job: kind, opts: track.opts, format }, label.toLowerCase(), `${fileBase(track)}-${kind}.zip`, "application/zip");
+  };
+
+  const downloadTrack = () => {
+    if (!track) return;
+    const name = `${fileBase(track)}${track.opts.loop ? "-loop" : ""}.${format}`;
+    // Copies, since the worker takes ownership of what it is sent and the track is still playing.
+    runExport({ job: "encode", left: track.left.slice(), right: track.right.slice(), format }, `${FORMATS[format].label} file`, name, FORMATS[format].mime);
   };
 
   const exportMidi = () => {
@@ -540,6 +561,28 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
 
         <div className="scroll-thin flex-1 overflow-y-auto px-4 pb-4">
           <h2 className={`flex items-baseline justify-between pt-3 pb-1.5 ${HEADING}`}>
+            Inspired by
+            <span className="tracking-normal text-faint normal-case">classic game soundtracks</span>
+          </h2>
+          {PRESET_GROUPS.map(([group, ids]) => (
+            <div key={group} className="pb-2">
+              <div className="pb-1 text-xs text-faint">{group}</div>
+              <div className="grid grid-cols-2 gap-1">
+                {ids.map((id) => (
+                  <Chip key={id} on={preset === id} onClick={() => pickPreset(id)} title={PRESETS[id].blurb} className="text-left">
+                    {PRESETS[id].label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="pt-1 text-xs leading-snug text-faint">
+            {preset
+              ? `${PRESETS[preset].blurb}. Every press writes a new song in this spirit; change anything below to make it your own.`
+              : "Sets the styles, tempo, scale and band in one go. The songs are always new — only the feel is borrowed."}
+          </p>
+
+          <h2 className={`flex items-baseline justify-between pt-4 pb-1.5 ${HEADING}`}>
             Style
             <span className="tracking-normal text-faint normal-case">
               {styles.length} of {MAX_BLEND} · pick several to blend
@@ -686,19 +729,21 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
             >
               Copy link
             </button>
+            <FormatPicker value={format} onChange={setFormat} disabled={!!exporting} />
             <button
               type="button"
-              onClick={() => track && saveFile(encodeWav(track.left, track.right), `${fileBase(track)}${track.opts.loop ? "-loop" : ""}.wav`)}
-              disabled={!track || busy}
-              title="16-bit stereo WAV, 44.1 kHz"
+              onClick={downloadTrack}
+              disabled={!track || busy || !!exporting}
+              title={`Stereo, 44.1 kHz. ${FORMATS[format].hint}`}
               className="inline-flex h-8 items-center rounded-md border border-amp bg-amp px-3 text-[13px] font-semibold whitespace-nowrap text-bg transition hover:brightness-110 disabled:opacity-40"
             >
-              Download WAV
+              Download {FORMATS[format].label}
             </button>
           </div>
 
           <p className="mt-2 min-h-4 text-xs text-mute">
             {notice ||
+              (exporting && `Rendering ${exporting.label}… ${Math.round(exporting.fraction * 100)}%`) ||
               (track
                 ? track.opts.loop
                   ? "Loops without a gap: the reverb tail is folded back into the first bars, so just set it to repeat in your engine."
@@ -1043,7 +1088,7 @@ export default function MusicStudio({ active, nav, onAbout }: { active: boolean;
                 </button>
                 {exporting && (
                   <span className="flex items-center gap-2 text-xs text-mute">
-                    Rendering {exporting.label.toLowerCase()}… {Math.round(exporting.fraction * 100)}%
+                    Rendering {exporting.label}… {Math.round(exporting.fraction * 100)}%
                     <span className="block h-1 w-24 overflow-hidden rounded bg-line">
                       <span className="block h-full bg-amp transition-[width]" style={{ width: `${exporting.fraction * 100}%` }} />
                     </span>

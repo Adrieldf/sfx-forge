@@ -11,7 +11,8 @@
   "dependencies": {
     "next": "^16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "wasm-media-encoders": "^0.7.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
@@ -19,7 +20,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "^16.4.3",
+    "eslint-config-next": "^15.5.29",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

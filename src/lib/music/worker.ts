@@ -1,23 +1,27 @@
-import { wavBytes } from "../sfx/synth";
+import { encodeAudio, type AudioFormat } from "../encode";
 import { ALL_LAYERS, STINGERS, compose, type Form, type Layers, type MusicOptions, type ScoreInfo, type StingerKind } from "./compose";
 import { renderScore } from "./render";
 import { zip, type ZipEntry } from "./zip";
 
 /** Composing and rendering a few minutes of audio takes seconds, so it happens off the main thread. */
 export type ExportKind = "stems" | "variants" | "introloop" | "stingers";
-export type WorkerJob = { job: "track"; opts: MusicOptions } | { job: ExportKind; opts: MusicOptions };
+export type WorkerJob =
+  | { job: "track"; opts: MusicOptions }
+  | { job: ExportKind; opts: MusicOptions; format: AudioFormat }
+  | { job: "encode"; left: Float32Array<ArrayBuffer>; right: Float32Array<ArrayBuffer>; format: AudioFormat };
 export type WorkerReply =
   | { type: "progress"; fraction: number }
   | { type: "done"; left: Float32Array<ArrayBuffer>; right: Float32Array<ArrayBuffer>; info: ScoreInfo }
-  | { type: "file"; suffix: string; bytes: ArrayBuffer };
+  | { type: "file"; suffix: string; bytes: ArrayBuffer }
+  | { type: "error" };
 
 const post = (reply: WorkerReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(reply, transfer);
 
-/** Renders options to WAV bytes. `share` is this render's slice of the progress bar. */
-function wav(opts: MusicOptions, share: [number, number], gain?: number, cut?: boolean) {
+/** Renders options to the bytes of an audio file. `share` is this render's slice of the progress bar. */
+async function audio(format: AudioFormat, opts: MusicOptions, share: [number, number], gain?: number, cut?: boolean) {
   const [from, to] = share;
   const r = renderScore(compose(opts), opts.seed, (f) => post({ type: "progress", fraction: from + (to - from) * f }), { gain, cut });
-  return { data: new Uint8Array(wavBytes(r.left, r.right)), gain: r.gain };
+  return { data: await encodeAudio(format, r.left, r.right), gain: r.gain };
 }
 
 /** The arrangement of a track as an editable form, whether it was planned by hand or by the composer. */
@@ -36,23 +40,24 @@ const NOTES: Record<ExportKind, string> = {
   stingers: "Short jingles in the same key and instruments as the track, for wins, losses and rewards.\n",
 };
 
-function exportFiles(kind: ExportKind, opts: MusicOptions): ZipEntry[] {
+async function exportFiles(kind: ExportKind, opts: MusicOptions, format: AudioFormat): Promise<ZipEntry[]> {
   const files: ZipEntry[] = [];
+  const wav = (o: MusicOptions, share: [number, number], gain?: number, cut?: boolean) => audio(format, o, share, gain, cut);
   if (kind === "stems") {
     const layers = (Object.keys(ALL_LAYERS) as (keyof Layers)[]).filter((k) => opts.layers[k]);
-    const mix = wav(opts, [0, 1 / (layers.length + 1)]);
+    const mix = await wav(opts, [0, 1 / (layers.length + 1)]);
     files.push({ name: "mix.wav", data: mix.data });
-    layers.forEach((layer, i) => {
+    for (const [i, layer] of layers.entries()) {
       const solo = { ...opts, ambience: {}, layers: Object.fromEntries(Object.keys(ALL_LAYERS).map((k) => [k, k === layer])) as unknown as Layers };
       const score = compose(solo);
-      if (!score.tracks.length && !score.drums.length) return;
-      files.push({ name: `${layer}.wav`, data: wav(solo, [(i + 1) / (layers.length + 1), (i + 2) / (layers.length + 1)], mix.gain).data });
-    });
+      if (!score.tracks.length && !score.drums.length) continue;
+      files.push({ name: `${layer}.wav`, data: (await wav(solo, [(i + 1) / (layers.length + 1), (i + 2) / (layers.length + 1)], mix.gain)).data });
+    }
     // Rain, crackle and the rest go in a file of their own, so the game can mix them separately.
     const bed = compose(opts).atmos.ambience;
     if (Object.values(bed).some((v) => v > 0)) {
       const only = { ...opts, ambience: bed, layers: Object.fromEntries(Object.keys(ALL_LAYERS).map((k) => [k, false])) as unknown as Layers };
-      files.push({ name: "atmosphere.wav", data: wav(only, [layers.length / (layers.length + 1), 1], mix.gain).data });
+      files.push({ name: "atmosphere.wav", data: (await wav(only, [layers.length / (layers.length + 1), 1], mix.gain)).data });
     }
   } else if (kind === "variants") {
     const form = formOf(opts);
@@ -62,35 +67,53 @@ function exportFiles(kind: ExportKind, opts: MusicOptions): ZipEntry[] {
       form: { ...form, sections: form.sections.map((s) => (body(s.kind) ? { ...s, energy: f(s.energy ?? 0.7, s.kind) } : s)) },
     });
     // The normal version sets the level, so calm really is quieter and intense really is louder.
-    const normal = wav({ ...opts, form }, [0, 1 / 3]);
-    files.push({ name: "1-calm.wav", data: wav(scaled((e) => Math.min(0.42, Math.max(0.3, e * 0.5))), [1 / 3, 2 / 3], normal.gain).data });
+    const normal = await wav({ ...opts, form }, [0, 1 / 3]);
+    files.push({ name: "1-calm.wav", data: (await wav(scaled((e) => Math.min(0.42, Math.max(0.3, e * 0.5))), [1 / 3, 2 / 3], normal.gain)).data });
     files.push({ name: "2-normal.wav", data: normal.data });
-    files.push({ name: "3-intense.wav", data: wav(scaled((e, k) => (k === "c" ? Math.max(e, 0.7) : 1)), [2 / 3, 1], normal.gain).data });
+    files.push({ name: "3-intense.wav", data: (await wav(scaled((e, k) => (k === "c" ? Math.max(e, 0.7) : 1)), [2 / 3, 1], normal.gain)).data });
   } else if (kind === "introloop") {
     const form = formOf(opts);
-    const loop = wav({ ...opts, loop: true, form }, [0, 0.5]);
+    const loop = await wav({ ...opts, loop: true, form }, [0, 0.5]);
     const start: Form = { ...form, sections: [{ kind: "intro", bars: 4 }, ...form.sections] };
     // Cut dead at the loop point: whatever is still ringing there is already folded into the loop's first bars.
-    files.push({ name: "1-start.wav", data: wav({ ...opts, loop: true, form: start }, [0.5, 1], loop.gain, true).data });
+    files.push({ name: "1-start.wav", data: (await wav({ ...opts, loop: true, form: start }, [0.5, 1], loop.gain, true)).data });
     files.push({ name: "2-loop.wav", data: loop.data });
   } else {
-    (Object.keys(STINGERS) as StingerKind[]).forEach((stinger, i, all) => {
-      files.push({ name: `${stinger}.wav`, data: wav({ ...opts, loop: false, form: undefined, stinger }, [i / all.length, (i + 1) / all.length]).data });
-    });
+    const all = Object.keys(STINGERS) as StingerKind[];
+    for (const [i, stinger] of all.entries()) {
+      files.push({ name: `${stinger}.wav`, data: (await wav({ ...opts, loop: false, form: undefined, stinger }, [i / all.length, (i + 1) / all.length])).data });
+    }
   }
-  files.push({ name: "README.txt", data: new TextEncoder().encode(NOTES[kind]) });
+  // Every file above is named .wav; give it the extension of the format it was saved in.
+  for (const f of files) f.name = f.name.replace(/\.wav$/, `.${format}`);
+  files.push({ name: "README.txt", data: new TextEncoder().encode(NOTES[kind].replaceAll(".wav", `.${format}`)) });
   return files;
 }
 
-self.onmessage = (e: MessageEvent<WorkerJob>) => {
-  const { job, opts } = e.data;
-  if (job === "track") {
+self.onmessage = async (e: MessageEvent<WorkerJob>) => {
+  const job = e.data;
+  if (job.job === "encode") {
+    try {
+      const { buffer } = await encodeAudio(job.format, job.left, job.right, (fraction) => post({ type: "progress", fraction }));
+      post({ type: "file", suffix: "", bytes: buffer }, [buffer]);
+    } catch {
+      post({ type: "error" });
+    }
+    return;
+  }
+  const { opts } = job;
+  if (job.job === "track") {
     const score = compose(opts);
     const { left, right } = renderScore(score, opts.seed, (fraction) => post({ type: "progress", fraction }));
     const { style, recipe, bpm, key, bars, seconds, sections, instruments } = score;
     post({ type: "done", left, right, info: { style, recipe, bpm, key, bars, seconds, sections, instruments } }, [left.buffer, right.buffer]);
     return;
   }
-  const bytes = zip(exportFiles(job, opts)).buffer;
-  post({ type: "file", suffix: job, bytes }, [bytes]);
+  try {
+    const bytes = zip(await exportFiles(job.job, opts, job.format)).buffer;
+    post({ type: "file", suffix: job.job, bytes }, [bytes]);
+  } catch {
+    // A failed encoder load is a rejected promise, which never reaches the page's onerror.
+    post({ type: "error" });
+  }
 };

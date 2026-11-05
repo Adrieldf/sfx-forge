@@ -55,6 +55,9 @@ function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => n
   const saw = p.wave === "saw";
   const pulse = p.wave === "pulse";
   const duty = p.duty ?? 0.5;
+  // A narrow pulse spends most of its time low, so it sits off centre; left in, that offset
+  // switches on and off with every note as a thump.
+  const pulseDc = 2 * duty - 1;
   const norm = vel / Math.sqrt(nv);
 
   const aN = Math.max(1, p.a * sr);
@@ -108,7 +111,7 @@ function playSub(p: SubPatch, f0: number, dur: number, vel: number, rnd: () => n
       else if (pulse) {
         let y = x + 1 - duty;
         y -= Math.floor(y);
-        w = (x < duty ? 1 : -1) + blep(x, dt) - blep(y, dt);
+        w = (x < duty ? 1 : -1) - pulseDc + blep(x, dt) - blep(y, dt);
       } else w = 1 - 4 * Math.abs(x - 0.5);
       l += w * gl[v];
       if (stereo) r += w * gr[v];
@@ -245,6 +248,8 @@ function playPluck(p: PluckPatch, f0: number, dur: number, vel: number, rnd: () 
 
   let idx = 0;
   let x1 = 0, apIn = 0, apOut = 0;
+  // The release fades what comes out, sample by sample. Damping the loop instead only bites once
+  // per trip round the string, which on a low string is too seldom to stop it before the note is cut.
   let damp = 1;
   for (let i = 0; i < m; i++) {
     const x = buf[idx];
@@ -253,10 +258,10 @@ function playPluck(p: PluckPatch, f0: number, dur: number, vel: number, rnd: () 
     const y = c * low + apIn - c * apOut;
     apIn = low;
     apOut = y;
-    if (i > durN) damp = release;
-    buf[idx] = y * rho * damp;
+    if (i > durN) damp *= release;
+    buf[idx] = y * rho;
     if (++idx >= n) idx = 0;
-    noteL[i] = x * gain;
+    noteL[i] = x * gain * damp;
   }
   return m;
 }
